@@ -45,6 +45,10 @@ func (g *Game) Update(deltaTime float32) {
 		return
 	}
 
+	for _, e := range g.ghosts {
+		e.updateGhost()
+	}
+
 	score := p.updatePlayer(deltaTime, g.board)
 	if score > 0 {
 		p.score += score
@@ -55,7 +59,13 @@ func (g *Game) Update(deltaTime float32) {
 	}
 }
 
-func (p *Player) updatePlayer(dt float32, board [][]Tile) int {
+func (p *Entity) updateGhost() {
+	p.pixelX = float32(p.tileX * TileZoom)
+	p.pixelY = float32(p.tileY * TileZoom)
+	//fmt.Printf("update ghosts: %0.2f %0.2f\n", p.pixelX, p.pixelY)
+}
+
+func (p *Entity) updatePlayer(dt float32, board [][]Tile) int {
 	// === ANIMATION ALWAYS ON ===
 	if p.teleportTimer > 0 {
 		p.speed = TeleportSpeed * Zoom
@@ -107,7 +117,7 @@ func (p *Player) updatePlayer(dt float32, board [][]Tile) int {
 		// Define a tolerance for being "at" or "near" the center for turning.
 		turnTolerance := 2.0
 
-		// Condition 1: Player is currently stopped. Try the next direction.
+		// Condition 1: Entity is currently stopped. Try the next direction.
 		if p.dir.X == 0 && p.dir.Y == 0 {
 			if p.canMove(p.nextDir, board) {
 				// If stopped and can move, snap to the top-left of the current tile (pixel origin)
@@ -119,7 +129,7 @@ func (p *Player) updatePlayer(dt float32, board [][]Tile) int {
 				p.nextDir = rl.Vector2{0, 0}
 			}
 		} else if (p.dir.X != 0 && p.nextDir.Y != 0) || (p.dir.Y != 0 && p.nextDir.X != 0) {
-			// Condition 2: Player is moving and attempting a 90-degree turn.
+			// Condition 2: Entity is moving and attempting a 90-degree turn.
 			// Check if player is aligned enough on the perpendicular axis for a turn
 			isAlignedForTurn := false
 			if p.dir.X != 0 { // Currently moving horizontally, attempting vertical turn
@@ -147,7 +157,7 @@ func (p *Player) updatePlayer(dt float32, board [][]Tile) int {
 				canChangeDir = true
 			}
 		} else if p.nextDir.X == p.dir.X && p.nextDir.Y == p.dir.Y {
-			// Condition 4: Player is trying to reinforce current direction.
+			// Condition 4: Entity is trying to reinforce current direction.
 			p.nextDir = rl.Vector2{0, 0}
 		}
 
@@ -165,7 +175,7 @@ func (p *Player) updatePlayer(dt float32, board [][]Tile) int {
 		moveDistanceX := p.dir.X * p.speed * dt
 		moveDistanceY := p.dir.Y * p.speed * dt
 
-		// Player'p current tile (based on top-left corner, which is updated at the top of function)
+		// Entity'p current tile (based on top-left corner, which is updated at the top of function)
 		currentTileX := p.tileX
 		currentTileY := p.tileY
 
@@ -249,13 +259,13 @@ func (p *Player) updatePlayer(dt float32, board [][]Tile) int {
 				// Collision in Y direction
 				if p.dir.Y > 0 { // Moving Down
 					// Calculate max allowed movement: up to the top edge of the wall tile
-					// Player'p bottom edge (p.pixelY + playerSize) aligns with wall'p top edge.
+					// Entity'p bottom edge (p.pixelY + playerSize) aligns with wall'p top edge.
 					maxMoveY := (float32(nextCheckTileY * TileZoom)) - (p.pixelY + playerSize)
 					p.pixelY += maxMoveY // Move only up to the collision point
 					didMove = true
 				} else { // Moving Up
 					// Calculate max allowed movement: up to the bottom edge of the wall tile
-					// Player'p top edge (p.pixelY) aligns with wall'p bottom edge.
+					// Entity'p top edge (p.pixelY) aligns with wall'p bottom edge.
 					maxMoveY := (float32((nextCheckTileY + 1) * TileZoom)) - p.pixelY
 					p.pixelY += maxMoveY // Move only up to the collision point
 					didMove = true
@@ -290,7 +300,7 @@ func (p *Player) updatePlayer(dt float32, board [][]Tile) int {
 }
 
 // Check if movement in a direction is possible
-func (p *Player) canMove(dir rl.Vector2, board [][]Tile) bool {
+func (p *Entity) canMove(dir rl.Vector2, board [][]Tile) bool {
 	if int(dir.X) == 0 && int(dir.Y) == 0 {
 		return true // Standing still is always possible
 	}

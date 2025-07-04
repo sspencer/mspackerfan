@@ -14,7 +14,10 @@ func (g *Game) Draw() {
 
 	// Animate characters
 	rl.BeginShaderMode(g.shader) // make background transparent
+
+	g.drawGhosts() // draw player before ghost when player is eaten
 	g.drawPlayer()
+
 	rl.EndShaderMode()
 	rl.EndMode2D()
 
@@ -92,7 +95,26 @@ func (g *Game) drawBoard() {
 
 }
 
+func (g *Game) drawGhosts() {
+	// TODO move texture to entity and change receiver from Game to Entity
+	for _, s := range g.ghosts {
+		loc := s.loc[s.shape]
+		sx := float32(loc.x) + float32(s.frame)*s.width
+		sy := float32(loc.y)
+		src := rl.NewRectangle(sx, sy, s.width, s.height) // sprite
+
+		offsetX, offsetY := float32(-4), float32(-4)
+		if s.tileY == 14 && (s.tileX >= 12 && s.tileX <= 16) {
+			offsetX = float32(-7)
+		}
+
+		dst := rl.NewRectangle(s.pixelX+offsetX*Zoom, s.pixelY+offsetY*Zoom, s.width*Zoom, s.height*Zoom)
+		rl.DrawTexturePro(g.texture, src, dst, rl.Vector2{}, 0, rl.White)
+	}
+}
+
 func (g *Game) drawPlayer() {
+	// TODO move texture to entity and change receiver from Game to Entity
 	s := g.player
 	loc := s.loc[s.shape]
 	sx := float32(loc.x) + float32(s.frame)*s.width
