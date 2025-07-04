@@ -1,4 +1,4 @@
-module github.com/sspencer/pocmon
+module github.com/sspencer/mspackerfan
 
 go 1.24.3
 
