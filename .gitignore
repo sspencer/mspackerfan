@@ -8,6 +8,10 @@
 *.so
 *.dylib
 
+# don't include artwork
+*.png 
+notes.md
+
 # Test binary, built with `go test -c`
 *.test
 
@@ -28,5 +32,5 @@ go.work.sum
 .env
 
 # Editor/IDE
-# .idea/
-# .vscode/
+ .idea/
+ .vscode/
