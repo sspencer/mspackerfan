@@ -84,7 +84,7 @@ func createGhost(name string, startX, startY, spriteY int, shape Shape) *Entity 
 		dir:        shape.Direction(),
 		nextDir:    shape.Direction(),
 		frameTime:  0.0,
-		frameSpeed: 0.1,
+		frameSpeed: 0.15,
 		numFrames:  2,
 		frame:      0,
 		speed:      GhostSpeed * Zoom, // pixels per second

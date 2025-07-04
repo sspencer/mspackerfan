@@ -46,7 +46,7 @@ func (g *Game) Update(deltaTime float32) {
 	}
 
 	for _, e := range g.ghosts {
-		e.updateGhost()
+		e.updateGhost(deltaTime)
 	}
 
 	score := p.updatePlayer(deltaTime, g.board)
@@ -59,10 +59,17 @@ func (g *Game) Update(deltaTime float32) {
 	}
 }
 
-func (p *Entity) updateGhost() {
+func (p *Entity) updateGhost(dt float32) {
+	p.frameTime += dt
+
+	if p.frameTime > p.frameSpeed {
+		p.frame = (p.frame + 1) % p.numFrames
+		p.frameTime -= p.frameSpeed
+	}
+
 	p.pixelX = float32(p.tileX * TileZoom)
 	p.pixelY = float32(p.tileY * TileZoom)
-	//fmt.Printf("update ghosts: %0.2f %0.2f\n", p.pixelX, p.pixelY)
+
 }
 
 func (p *Entity) updatePlayer(dt float32, board [][]Tile) int {
