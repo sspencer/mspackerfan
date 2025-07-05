@@ -106,10 +106,10 @@ func initGame(font, texture rl.Texture2D, image *rl.Image) *Game {
 	g.player = createPlayer(dots)
 
 	g.ghosts = make([]*Entity, 4)
-	g.ghosts[0] = createGhost("Blinky", 9, 14, 64, ShapeUp)
-	g.ghosts[1] = createGhost("Inky", 12, 14, 96, ShapeDown)
-	g.ghosts[2] = createGhost("Pinky", 14, 14, 80, ShapeUp)
-	g.ghosts[3] = createGhost("Clyde", 16, 14, 112, ShapeDown)
+	g.ghosts[0] = createGhost(Blinky{})
+	g.ghosts[1] = createGhost(Pinky{})
+	g.ghosts[2] = createGhost(Inky{})
+	g.ghosts[3] = createGhost(Clyde{})
 
 	return g
 }
