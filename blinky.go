@@ -3,7 +3,7 @@ package main
 // Blinky (Red):
 //    Chase:
 //       Targets Packer’s current tile directly, making Blinky the
-//       most aggressive ghost.
+//       most aggressive behavior.
 //    Scatter:
 //       Moves to the top-right corner of the maze.
 

@@ -41,15 +41,13 @@ type Vec2i struct {
 
 type Entity struct {
 	name          string
-	loc           map[Shape]Vec2i // location in spritesheet
+	sprite        map[Shape]Vec2i // location in spritesheet
 	shape         Shape
 	nextShape     Shape
 	dir           rl.Vector2
 	nextDir       rl.Vector2
-	tileX         int
-	tileY         int
-	pixelX        float32
-	pixelY        float32
+	tile          Vec2i
+	pixel         rl.Vector2
 	width         float32
 	height        float32
 	frameTime     float32
@@ -59,90 +57,18 @@ type Entity struct {
 	speed         float32
 	slowTimer     float32
 	teleportTimer float32
-	score         int
-	dots          int
-	ghostMode     GhostMode
-	ghost         Ghost
-}
-
-func createGhost(h Ghost) *Entity {
-	spriteY := h.Sprite().y
-	startX := h.StartingTile().x
-	startY := h.StartingTile().y
-	shape := h.StartingShape()
-
-	ghost := &Entity{
-		name: h.String(),
-		loc: map[Shape]Vec2i{
-			ShapeUp:    {520, spriteY},
-			ShapeRight: {456, spriteY},
-			ShapeDown:  {552, spriteY},
-			ShapeLeft:  {488, spriteY},
-		},
-		pixelX:     float32(startX * TileSize * Zoom),
-		pixelY:     float32(startY * TileSize * Zoom),
-		width:      16,
-		height:     16,
-		tileX:      startX, // * Zoom,
-		tileY:      startY, // * Zoom,
-		shape:      shape,
-		nextShape:  shape,
-		dir:        shape.Direction(),
-		nextDir:    shape.Direction(),
-		frameTime:  0.0,
-		frameSpeed: 0.15,
-		numFrames:  2,
-		frame:      0,
-		speed:      GhostSpeed * Zoom, // pixels per second
-		ghost:      h,
-	}
-
-	return ghost
-}
-
-func createPlayer(dots int) *Entity {
-
-	startX := 13
-	startY := 23
-	shape := ShapeLeft
-
-	return &Entity{
-		name: "ms. packer",
-		loc: map[Shape]Vec2i{
-			ShapeUp:    {456, 32},
-			ShapeRight: {456, 0},
-			ShapeDown:  {456, 48},
-			ShapeLeft:  {456, 16},
-		},
-		pixelX:     float32(startX * TileSize * Zoom),
-		pixelY:     float32(startY * TileSize * Zoom),
-		width:      16,
-		height:     16,
-		tileX:      startX, // * Zoom,
-		tileY:      startY, // * Zoom,
-		shape:      shape,
-		nextShape:  shape,
-		dir:        shape.Direction(),
-		nextDir:    shape.Direction(),
-		frameTime:  0.0,
-		frameSpeed: 0.1,
-		numFrames:  3,
-		frame:      0,
-		speed:      PlayerSpeed * Zoom, // pixels per second
-		dots:       dots,
-	}
 }
 
 func (s Shape) Direction() rl.Vector2 {
 	switch s {
 	case ShapeUp:
-		return rl.Vector2{0, -1}
+		return rl.Vector2{Y: -1}
 	case ShapeRight:
-		return rl.Vector2{1, 0}
+		return rl.Vector2{X: 1}
 	case ShapeDown:
-		return rl.Vector2{0, 1}
+		return rl.Vector2{Y: 1}
 	case ShapeLeft:
-		return rl.Vector2{-1, 0}
+		return rl.Vector2{X: -1}
 	default:
 		panic("unhandled default case")
 	}

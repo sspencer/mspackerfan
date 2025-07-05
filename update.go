@@ -84,25 +84,25 @@ func (g *Game) updateTrainingMode() int {
 	if p.nextDir.X != 0 || p.nextDir.Y != 0 {
 		p.shape = p.nextShape
 		p.dir = p.nextDir
-		p.tileX = p.tileX + int(p.nextDir.X)
-		p.tileY = p.tileY + int(p.nextDir.Y)
-		tile := g.board[p.tileY][p.tileX]
+		p.tile.x = p.tile.x + int(p.nextDir.X)
+		p.tile.y = p.tile.y + int(p.nextDir.Y)
+		tile := g.board[p.tile.y][p.tile.x]
 		if tile == Dot {
 			score = 10
-			g.board[p.tileY][p.tileX] = Empty
+			g.board[p.tile.y][p.tile.x] = Empty
 		} else if tile == Power {
 			score = 50
-			g.board[p.tileY][p.tileX] = Empty
+			g.board[p.tile.y][p.tile.x] = Empty
 		}
-		p.pixelX = float32(p.tileX * TileZoom)
-		p.pixelY = float32(p.tileY * TileZoom)
+		p.pixel.X = float32(p.tile.x * TileZoom)
+		p.pixel.Y = float32(p.tile.y * TileZoom)
 		p.nextDir = rl.Vector2{0, 0}
 	}
 
 	return score
 }
 
-func (p *Entity) updateGhost(dt float32) {
+func (p *Ghost) updateGhost(dt float32) {
 	p.frameTime += dt
 
 	if p.frameTime > p.frameSpeed {
@@ -110,9 +110,11 @@ func (p *Entity) updateGhost(dt float32) {
 		p.frameTime -= p.frameSpeed
 	}
 
-	p.pixelX = float32(p.tileX * TileZoom)
-	p.pixelY = float32(p.tileY * TileZoom)
+	//p.pixel.X = float32(p.tile.x * TileZoom)
+	//p.pixel.Y = float32(p.tile.y * TileZoom)
 
+	p.pixel.X = float32(p.tile.x * TileZoom)
+	p.pixel.Y = float32(p.tile.y * TileZoom)
 }
 
 func (p *Entity) updatePlayer(dt float32, board [][]Tile) int {
@@ -148,8 +150,8 @@ func (p *Entity) updatePlayer(dt float32, board [][]Tile) int {
 	//	Y: 24 instead of 25 for 799.995911
 	//	Y: 23 instead of 24 for 767.920776
 	ff := float32(0.15)
-	p.tileX = int(math.Floor(float64(p.pixelX+ff) / float64(TileZoom)))
-	p.tileY = int(math.Floor(float64(p.pixelY+ff) / float64(TileZoom)))
+	p.tile.x = int(math.Floor(float64(p.pixel.X+ff) / float64(TileZoom)))
+	p.tile.y = int(math.Floor(float64(p.pixel.Y+ff) / float64(TileZoom)))
 	// =================================================================
 
 	// Check for direction changes
@@ -157,12 +159,12 @@ func (p *Entity) updatePlayer(dt float32, board [][]Tile) int {
 		canChangeDir := false
 
 		// Calculate the center of the current tile in pixel coordinates (top-left of tile + half tile size)
-		currentTileCenterX := float32(p.tileX*TileZoom) + float32(TileZoom/2)
-		currentTileCenterY := float32(p.tileY*TileZoom) + float32(TileZoom/2)
+		currentTileCenterX := float32(p.tile.x*TileZoom) + float32(TileZoom/2)
+		currentTileCenterY := float32(p.tile.y*TileZoom) + float32(TileZoom/2)
 
 		// Calculate player'p *actual* center (assuming pixelX/Y is top-left of player sprite)
-		playerCenterX := p.pixelX + float32(TileZoom/2)
-		playerCenterY := p.pixelY + float32(TileZoom/2)
+		playerCenterX := p.pixel.X + float32(TileZoom/2)
+		playerCenterY := p.pixel.Y + float32(TileZoom/2)
 
 		// Define a tolerance for being "at" or "near" the center for turning.
 		turnTolerance := 2.0
@@ -171,8 +173,8 @@ func (p *Entity) updatePlayer(dt float32, board [][]Tile) int {
 		if p.dir.X == 0 && p.dir.Y == 0 {
 			if p.canMove(p.nextDir, board) {
 				// If stopped and can move, snap to the top-left of the current tile (pixel origin)
-				p.pixelX = float32(p.tileX * TileZoom)
-				p.pixelY = float32(p.tileY * TileZoom)
+				p.pixel.X = float32(p.tile.x * TileZoom)
+				p.pixel.Y = float32(p.tile.y * TileZoom)
 				canChangeDir = true
 			} else {
 				// Cannot move in that direction, clear nextDir.
@@ -196,8 +198,8 @@ func (p *Entity) updatePlayer(dt float32, board [][]Tile) int {
 				if p.canMove(p.nextDir, board) {
 					// === FIX: Snap BOTH coordinates to the current tile'p top-left corner ===
 					// This ensures pixel-perfect alignment with the grid for the new direction.
-					p.pixelX = float32(p.tileX * TileZoom)
-					p.pixelY = float32(p.tileY * TileZoom)
+					p.pixel.X = float32(p.tile.x * TileZoom)
+					p.pixel.Y = float32(p.tile.y * TileZoom)
 					canChangeDir = true
 				}
 			}
@@ -226,8 +228,8 @@ func (p *Entity) updatePlayer(dt float32, board [][]Tile) int {
 		moveDistanceY := p.dir.Y * p.speed * dt
 
 		// Entity'p current tile (based on top-left corner, which is updated at the top of function)
-		currentTileX := p.tileX
-		currentTileY := p.tileY
+		currentTileX := p.tile.x
+		currentTileY := p.tile.y
 
 		// Assume player sprite occupies one full tile for collision purposes
 		playerSize := float32(TileZoom)
@@ -239,24 +241,24 @@ func (p *Entity) updatePlayer(dt float32, board [][]Tile) int {
 			var nextCheckTileX int
 
 			if p.dir.X > 0 { // Moving Right
-				leadingEdgePixelX = p.pixelX + playerSize + moveDistanceX
+				leadingEdgePixelX = p.pixel.X + playerSize + moveDistanceX
 				// Check the tile that the right edge of the player would cross into
 				nextCheckTileX = int(math.Floor(float64(leadingEdgePixelX-0.001) / float64(TileZoom))) // -0.001 for float safety
 			} else { // Moving Left
-				leadingEdgePixelX = p.pixelX + moveDistanceX
+				leadingEdgePixelX = p.pixel.X + moveDistanceX
 				// Check the tile that the left edge of the player would cross into
 				nextCheckTileX = int(math.Floor(float64(leadingEdgePixelX) / float64(TileZoom)))
 			}
 
-			if nextCheckTileX == 0 && board[p.tileY][0] == Tunnel {
-				p.tileX = GameWidth - 1
-				p.pixelX = float32(p.tileX * TileZoom)
+			if nextCheckTileX == 0 && board[p.tile.y][0] == Tunnel {
+				p.tile.x = GameWidth - 1
+				p.pixel.X = float32(p.tile.x * TileZoom)
 				p.teleportTimer = TeleportTime
 
 				return 0
-			} else if nextCheckTileX == GameWidth && board[p.tileY][GameWidth-1] == Tunnel {
-				p.tileX = 0
-				p.pixelX = float32(p.tileX * TileZoom)
+			} else if nextCheckTileX == GameWidth && board[p.tile.y][GameWidth-1] == Tunnel {
+				p.tile.x = 0
+				p.pixel.X = float32(p.tile.x * TileZoom)
 				p.teleportTimer = TeleportTime
 				return 0
 			}
@@ -267,22 +269,22 @@ func (p *Entity) updatePlayer(dt float32, board [][]Tile) int {
 				// Collision in X direction
 				if p.dir.X > 0 { // Moving Right
 					// Calculate max allowed movement: up to the left edge of the wall tile
-					// This means player'p right edge (p.pixelX + playerSize) aligns with wall'p left edge.
-					maxMoveX := (float32(nextCheckTileX * TileZoom)) - (p.pixelX + playerSize)
-					p.pixelX += maxMoveX // Move only up to the collision point
+					// This means player'p right edge (p.pixel.X + playerSize) aligns with wall'p left edge.
+					maxMoveX := (float32(nextCheckTileX * TileZoom)) - (p.pixel.X + playerSize)
+					p.pixel.X += maxMoveX // Move only up to the collision point
 					didMove = true
 
 				} else { // Moving Left
 					// Calculate max allowed movement: up to the right edge of the wall tile
-					// This means player'p left edge (p.pixelX) aligns with wall'p right edge.
-					maxMoveX := (float32((nextCheckTileX + 1) * TileZoom)) - p.pixelX
-					p.pixelX += maxMoveX // Move only up to the collision point
+					// This means player'p left edge (p.pixel.X) aligns with wall'p right edge.
+					maxMoveX := (float32((nextCheckTileX + 1) * TileZoom)) - p.pixel.X
+					p.pixel.X += maxMoveX // Move only up to the collision point
 					didMove = true
 				}
 				p.dir.X = 0 // Stop horizontal movement
 			} else {
 				// No collision horizontally, apply full horizontal movement
-				p.pixelX += moveDistanceX
+				p.pixel.X += moveDistanceX
 				didMove = true
 			}
 		}
@@ -294,11 +296,11 @@ func (p *Entity) updatePlayer(dt float32, board [][]Tile) int {
 			var nextCheckTileY int
 
 			if p.dir.Y > 0 { // Moving Down
-				leadingEdgePixelY = p.pixelY + playerSize + moveDistanceY
+				leadingEdgePixelY = p.pixel.Y + playerSize + moveDistanceY
 				// Check the tile that the bottom edge of the player would cross into
 				nextCheckTileY = int(math.Floor(float64(leadingEdgePixelY-0.001) / float64(TileZoom))) // -0.001 for float safety
 			} else { // Moving Up
-				leadingEdgePixelY = p.pixelY + moveDistanceY
+				leadingEdgePixelY = p.pixel.Y + moveDistanceY
 				// Check the tile that the top edge of the player would cross into
 				nextCheckTileY = int(math.Floor(float64(leadingEdgePixelY) / float64(TileZoom)))
 			}
@@ -309,38 +311,38 @@ func (p *Entity) updatePlayer(dt float32, board [][]Tile) int {
 				// Collision in Y direction
 				if p.dir.Y > 0 { // Moving Down
 					// Calculate max allowed movement: up to the top edge of the wall tile
-					// Entity'p bottom edge (p.pixelY + playerSize) aligns with wall'p top edge.
-					maxMoveY := (float32(nextCheckTileY * TileZoom)) - (p.pixelY + playerSize)
-					p.pixelY += maxMoveY // Move only up to the collision point
+					// Entity'p bottom edge (p.pixel.Y + playerSize) aligns with wall'p top edge.
+					maxMoveY := (float32(nextCheckTileY * TileZoom)) - (p.pixel.Y + playerSize)
+					p.pixel.Y += maxMoveY // Move only up to the collision point
 					didMove = true
 				} else { // Moving Up
 					// Calculate max allowed movement: up to the bottom edge of the wall tile
-					// Entity'p top edge (p.pixelY) aligns with wall'p bottom edge.
-					maxMoveY := (float32((nextCheckTileY + 1) * TileZoom)) - p.pixelY
-					p.pixelY += maxMoveY // Move only up to the collision point
+					// Entity'p top edge (p.pixel.Y) aligns with wall'p bottom edge.
+					maxMoveY := (float32((nextCheckTileY + 1) * TileZoom)) - p.pixel.Y
+					p.pixel.Y += maxMoveY // Move only up to the collision point
 					didMove = true
 				}
 				p.dir.Y = 0 // Stop vertical movement
 			} else {
 				// No collision vertically, apply full vertical movement
-				p.pixelY += moveDistanceY
+				p.pixel.Y += moveDistanceY
 				didMove = true
 			}
 		}
-		// p.tileX and p.tileY are updated at the top of the function based on current pixel position,
+		// p.tile.x and p.tile.y are updated at the top of the function based on current pixel position,
 		// so no need to update them here again after pixel movement.
 	}
 
 	// === END REFINED MOVEMENT AND COLLISION HANDLING ===
 
-	if didMove && p.tileX >= 0 && p.tileX < GameWidth {
-		tile := board[p.tileY][p.tileX]
+	if didMove && p.tile.x >= 0 && p.tile.x < GameWidth {
+		tile := board[p.tile.y][p.tile.x]
 		if tile == Dot {
-			board[p.tileY][p.tileX] = Empty
+			board[p.tile.y][p.tile.x] = Empty
 			p.slowTimer = SlowTime
 			return 10
 		} else if tile == Power {
-			board[p.tileY][p.tileX] = Empty
+			board[p.tile.y][p.tile.x] = Empty
 			p.slowTimer = SlowTime
 			return 50
 		}
@@ -355,8 +357,8 @@ func (p *Entity) canMove(dir rl.Vector2, board [][]Tile) bool {
 		return true // Standing still is always possible
 	}
 
-	nextTileX := p.tileX + int(dir.X)
-	nextTileY := p.tileY + int(dir.Y)
+	nextTileX := p.tile.x + int(dir.X)
+	nextTileY := p.tile.y + int(dir.Y)
 
 	// Check boundary conditions for the board
 	if nextTileX < 0 || nextTileX >= GameWidth || nextTileY < 0 || nextTileY >= GameHeight {

@@ -16,7 +16,7 @@ func (g *Game) Draw() {
 	// Animate characters
 	rl.BeginShaderMode(g.shader) // make background transparent
 
-	g.drawGhosts() // draw player before ghost when player is eaten
+	g.drawGhosts() // draw player before behavior when player is eaten
 	g.drawPlayer()
 
 	rl.EndShaderMode()
@@ -43,12 +43,12 @@ func (g *Game) drawLayout() {
 	if trainingMode {
 		bottom := int32(ScreenHeight * TileSize * Zoom)
 		p := g.player
-		msg := fmt.Sprintf("pos=(%d,%d) mode=%s", p.tileX, p.tileY, strings.ToUpper(g.ghostMode.String()))
+		msg := fmt.Sprintf("pos=(%d,%d) mode=%s", p.tile.x, p.tile.y, strings.ToUpper(g.ghostMode.String()))
 		rl.DrawText(msg, 5, bottom-50, 20, rl.Green)
 
 	} else {
-		g.drawText(fmt.Sprintf("%d/%d", g.player.tileX, g.player.tileY), 2, 34, pixelOffset, rl.White) // player 2 score
-		g.drawText(fmt.Sprintf("dots %d", g.player.dots), 19, 34, pixelOffset, rl.White)               // player 2 score
+		g.drawText(fmt.Sprintf("%d/%d", g.player.tile.x, g.player.tile.y), 2, 34, pixelOffset, rl.White) // player 2 score
+		g.drawText(fmt.Sprintf("dots %d", g.player.dots), 19, 34, pixelOffset, rl.White)                 // player 2 score
 	}
 
 }
@@ -107,17 +107,17 @@ func (g *Game) drawBoard() {
 func (g *Game) drawGhosts() {
 	// TODO move texture to entity and change receiver from Game to Entity
 	for _, s := range g.ghosts {
-		loc := s.loc[s.shape]
+		loc := s.sprite[s.shape]
 		sx := float32(loc.x) + float32(s.frame)*s.width
 		sy := float32(loc.y)
 		src := rl.NewRectangle(sx, sy, s.width, s.height) // sprite
 
 		offsetX, offsetY := float32(-4), float32(-4)
-		if s.tileY == 14 && (s.tileX >= 12 && s.tileX <= 16) {
+		if s.tile.y == 14 && (s.tile.x >= 12 && s.tile.x <= 16) {
 			offsetX = float32(-7)
 		}
 
-		dst := rl.NewRectangle(s.pixelX+offsetX*Zoom, s.pixelY+offsetY*Zoom, s.width*Zoom, s.height*Zoom)
+		dst := rl.NewRectangle(s.pixel.X+offsetX*Zoom, s.pixel.Y+offsetY*Zoom, s.width*Zoom, s.height*Zoom)
 		rl.DrawTexturePro(g.texture, src, dst, rl.Vector2{}, 0, rl.White)
 	}
 }
@@ -125,14 +125,14 @@ func (g *Game) drawGhosts() {
 func (g *Game) drawPlayer() {
 	// TODO move texture to entity and change receiver from Game to Entity
 	s := g.player
-	loc := s.loc[s.shape]
+	loc := s.sprite[s.shape]
 	sx := float32(loc.x) + float32(s.frame)*s.width
 	sy := float32(loc.y)
 	src := rl.NewRectangle(sx, sy, s.width, s.height) // sprite
 
-	offsetX := float32(-4) //float32(-4) * Zoom
-	offsetY := float32(-4) //float32(-4) * Zoom
-	dst := rl.NewRectangle(s.pixelX+offsetX*Zoom, s.pixelY+offsetY*Zoom, s.width*Zoom, s.height*Zoom)
+	offsetX := float32(-4)
+	offsetY := float32(-4)
+	dst := rl.NewRectangle(s.pixel.X+offsetX*Zoom, s.pixel.Y+offsetY*Zoom, s.width*Zoom, s.height*Zoom)
 	rl.DrawTexturePro(g.texture, src, dst, rl.Vector2{}, 0, rl.White)
 }
 

@@ -22,8 +22,8 @@ type Game struct {
 	font      rl.Texture2D
 	texture   rl.Texture2D
 	image     *rl.Image
-	player    *Entity
-	ghosts    []*Entity
+	player    *Packer
+	ghosts    []*Ghost
 	shader    rl.Shader
 	debug     bool
 	boardNum  int
@@ -103,9 +103,9 @@ func initGame(font, texture rl.Texture2D, image *rl.Image) *Game {
 
 	//g.printBoard(true)
 
-	g.player = createPlayer(dots)
+	g.player = createPacker(dots)
 
-	g.ghosts = make([]*Entity, 4)
+	g.ghosts = make([]*Ghost, 4)
 	g.ghosts[0] = createGhost(Blinky{})
 	g.ghosts[1] = createGhost(Pinky{})
 	g.ghosts[2] = createGhost(Inky{})
