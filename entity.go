@@ -11,6 +11,8 @@ const (
 	TeleportTime  = 0.75 // slow down for this long
 )
 
+var ghostId = 0
+
 type Shape int
 
 const (
@@ -40,6 +42,7 @@ type Vec2i struct {
 }
 
 type Entity struct {
+	id            int
 	name          string
 	loc           map[Shape]Vec2i // location in spritesheet
 	shape         Shape
@@ -65,7 +68,21 @@ type Entity struct {
 
 // red 280, pink 296, blue 312, orange: 328
 func createGhost(name string, startX, startY, spriteY int, shape Shape) *Entity {
-	return &Entity{
+	if trainingMode {
+		if ghostId == 1 { // blue
+			startX, startY = 5, 4
+			shape = ShapeLeft
+		} else if ghostId == 2 { // pink
+			startX, startY = 24, 21
+			shape = ShapeDown
+		} else if ghostId == 3 {
+			startX, startY = 15, 17 // orange
+			shape = ShapeLeft
+		}
+	}
+
+	ghost := &Entity{
+		id:   ghostId,
 		name: name,
 		loc: map[Shape]Vec2i{
 			ShapeUp:    {520, spriteY},
@@ -90,6 +107,8 @@ func createGhost(name string, startX, startY, spriteY int, shape Shape) *Entity 
 		speed:      GhostSpeed * Zoom, // pixels per second
 	}
 
+	ghostId++
+	return ghost
 }
 
 func createPlayer(dots int) *Entity {

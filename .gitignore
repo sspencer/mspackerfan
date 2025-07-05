@@ -11,6 +11,7 @@
 # don't include artwork
 *.png 
 notes.md
+ghosts.md
 
 # Test binary, built with `go test -c`
 *.test

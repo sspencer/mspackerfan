@@ -37,19 +37,38 @@ func (g *Game) Update(deltaTime float32) {
 		g.mapBoard()
 	}
 
+	if trainingMode {
+		if rl.IsKeyPressed(rl.KeyC) {
+			g.ghostMode = Chase
+		}
+
+		if rl.IsKeyPressed(rl.KeyS) {
+			g.ghostMode = Scatter
+		}
+
+		if rl.IsKeyPressed(rl.KeyF) {
+			g.ghostMode = Frightened
+		}
+	}
+
 	if rl.IsKeyPressed(rl.KeyP) {
 		g.paused = !g.paused
 	}
 
-	if g.paused {
-		return
+	score := 0
+	if trainingMode {
+		score = g.updateTrainingMode()
+	} else {
+		if g.paused {
+			return
+		}
+		for _, e := range g.ghosts {
+			e.updateGhost(deltaTime)
+		}
+
+		score = p.updatePlayer(deltaTime, g.board)
 	}
 
-	for _, e := range g.ghosts {
-		e.updateGhost(deltaTime)
-	}
-
-	score := p.updatePlayer(deltaTime, g.board)
 	if score > 0 {
 		p.score += score
 		p.dots -= 1
@@ -57,6 +76,30 @@ func (g *Game) Update(deltaTime float32) {
 	if p.score > g.highScore {
 		g.highScore = p.score
 	}
+}
+
+func (g *Game) updateTrainingMode() int {
+	p := g.player
+	score := 0
+	if p.nextDir.X != 0 || p.nextDir.Y != 0 {
+		p.shape = p.nextShape
+		p.dir = p.nextDir
+		p.tileX = p.tileX + int(p.nextDir.X)
+		p.tileY = p.tileY + int(p.nextDir.Y)
+		tile := g.board[p.tileY][p.tileX]
+		if tile == Dot {
+			score = 10
+			g.board[p.tileY][p.tileX] = Empty
+		} else if tile == Power {
+			score = 50
+			g.board[p.tileY][p.tileX] = Empty
+		}
+		p.pixelX = float32(p.tileX * TileZoom)
+		p.pixelY = float32(p.tileY * TileZoom)
+		p.nextDir = rl.Vector2{0, 0}
+	}
+
+	return score
 }
 
 func (p *Entity) updateGhost(dt float32) {

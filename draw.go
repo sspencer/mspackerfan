@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"strings"
 
 	rl "github.com/gen2brain/raylib-go/raylib"
 )
@@ -36,11 +37,19 @@ func (g *Game) drawLayout() {
 	// TODO player 1 vs 2
 	g.drawText(fmt.Sprintf("%d", g.player.score), 3, y, pixelOffset, rl.White) // player 1 score
 	g.drawText(fmt.Sprintf("%d", g.highScore), 13, y, pixelOffset, rl.White)   // high score
-	g.drawText("0", 22, y, pixelOffset, rl.White)                              // player 2 score
+	g.drawText("0", 24, y, pixelOffset, rl.White)                              // player 2 score
 
 	pixelOffset = 8
-	g.drawText(fmt.Sprintf("%d/%d", g.player.tileX, g.player.tileY), 2, 34, pixelOffset, rl.White) // player 2 score
-	g.drawText(fmt.Sprintf("dots %d", g.player.dots), 19, 34, pixelOffset, rl.White)               // player 2 score
+	if trainingMode {
+		bottom := int32(ScreenHeight * TileSize * Zoom)
+		p := g.player
+		msg := fmt.Sprintf("pos=(%d,%d) mode=%s", p.tileX, p.tileY, strings.ToUpper(g.ghostMode.String()))
+		rl.DrawText(msg, 5, bottom-50, 20, rl.Green)
+
+	} else {
+		g.drawText(fmt.Sprintf("%d/%d", g.player.tileX, g.player.tileY), 2, 34, pixelOffset, rl.White) // player 2 score
+		g.drawText(fmt.Sprintf("dots %d", g.player.dots), 19, 34, pixelOffset, rl.White)               // player 2 score
+	}
 
 }
 

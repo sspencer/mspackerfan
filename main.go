@@ -1,6 +1,8 @@
 package main
 
 import (
+	"flag"
+
 	rl "github.com/gen2brain/raylib-go/raylib"
 )
 
@@ -13,6 +15,8 @@ const (
 	TileSize     = 8
 	TileZoom     = TileSize * Zoom
 )
+
+var trainingMode bool
 
 type Game struct {
 	font      rl.Texture2D
@@ -27,9 +31,13 @@ type Game struct {
 	camera2   rl.Camera2D
 	paused    bool
 	highScore int
+	ghostMode GhostMode
 }
 
 func main() {
+	flag.BoolVar(&trainingMode, "t", false, "training mode")
+	flag.Parse()
+
 	rl.SetTraceLogLevel(rl.LogWarning)
 
 	rl.SetConfigFlags(rl.FlagVsyncHint)
@@ -68,7 +76,9 @@ func initGame(font, texture rl.Texture2D, image *rl.Image) *Game {
 	g.image = image
 	g.shader = chromaShader()
 	g.board = make([][]Tile, GameHeight)
-	g.highScore = 1640
+	g.highScore = 0
+	g.ghostMode = Scatter
+
 	for i := 0; i < GameHeight; i++ {
 		g.board[i] = make([]Tile, GameWidth)
 	}
