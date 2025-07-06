@@ -17,6 +17,23 @@ const (
 func (t Tile) String() string {
 	switch t {
 	case Wall:
+		return "X"
+	case Dot:
+		return "."
+	case Power:
+		return "*"
+	case Empty:
+		return " "
+	case Tunnel:
+		return "@"
+	default:
+		panic("unhandled default case")
+	}
+}
+
+func (t Tile) Name() string {
+	switch t {
+	case Wall:
 		return "wall"
 	case Dot:
 		return "dot"

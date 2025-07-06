@@ -1,5 +1,7 @@
 package main
 
+import rl "github.com/gen2brain/raylib-go/raylib"
+
 // Blinky (Red):
 //    Chase:
 //       Targets Packer’s current tile directly, making Blinky the
@@ -7,18 +9,30 @@ package main
 //    Scatter:
 //       Moves to the top-right corner of the maze.
 
-func (h Blinky) String() string {
-	return "Blinky"
+func (b Blinky) Id() GhostId {
+	return BlinkyId
 }
 
-func (h Blinky) StartingTile() Vec2i {
-	return Vec2i{x: 9, y: 14}
+func (b Blinky) Color() rl.Color {
+	return rl.Red
 }
 
-func (h Blinky) StartingShape() Shape {
-	return ShapeUp
+func (b Blinky) StartingTile() Vec2i {
+	return Vec2i{X: 9, Y: 14}
 }
 
-func (h Blinky) Sprite() Vec2i {
-	return Vec2i{x: 520, y: 64}
+func (b Blinky) StartingDir() Direction {
+	return Up
+}
+
+func (b Blinky) Sprite() Vec2i {
+	return Vec2i{X: 520, Y: 64}
+}
+
+func (b Blinky) Chase(packer *Packer, _ *Ghost) Vec2i {
+	return packer.tile
+}
+
+func (b Blinky) Scatter() Vec2i {
+	return Vec2i{X: 26, Y: 1} // depends on board
 }

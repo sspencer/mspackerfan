@@ -1,6 +1,10 @@
 package main
 
-import rl "github.com/gen2brain/raylib-go/raylib"
+import (
+	"math"
+
+	rl "github.com/gen2brain/raylib-go/raylib"
+)
 
 const (
 	GhostSpeed    = 50   // speed through maze in level 1
@@ -11,41 +15,92 @@ const (
 	TeleportTime  = 0.75 // slow down for this long
 )
 
-type Shape int
+type Direction int
 
 const (
-	ShapeUp Shape = iota
-	ShapeRight
-	ShapeDown
-	ShapeLeft
+	None Direction = iota
+	Up
+	Right
+	Down
+	Left
 )
 
-func (d Shape) Offset() int {
+func (d Direction) String() string {
 	switch d {
-	case ShapeUp:
-		return 2
-	case ShapeRight:
-		return 0
-	case ShapeDown:
-		return 3
-	case ShapeLeft:
-		return 1
+	case Up:
+		return "Up"
+	case Right:
+		return "Right"
+	case Down:
+		return "Down"
+	case Left:
+		return "Left"
 	default:
 		panic("unhandled default case")
 	}
 }
 
+func (d Direction) Opposite() Direction {
+	switch d {
+	case Up:
+		return Down
+	case Right:
+		return Left
+	case Down:
+		return Up
+	case Left:
+		return Right
+	default:
+		panic("unhandled default case")
+	}
+}
+
+func (d Direction) Vector() rl.Vector2 {
+	switch d {
+	case Up:
+		return rl.Vector2{Y: -1}
+	case Right:
+		return rl.Vector2{X: 1}
+	case Down:
+		return rl.Vector2{Y: 1}
+	case Left:
+		return rl.Vector2{X: -1}
+	default:
+		panic("unhandled default case")
+	}
+}
+
+func (d Direction) GetNextTile(vec Vec2i) Vec2i {
+	return Vec2i{
+		X: vec.X + int(d.Vector().X),
+		Y: vec.Y + int(d.Vector().Y),
+	}
+}
+
 type Vec2i struct {
-	x, y int
+	X, Y int
+}
+
+func (v Vec2i) Add(x, y int) Vec2i {
+	return Vec2i{
+		X: v.X + x,
+		Y: v.Y + y,
+	}
+}
+
+func (v Vec2i) Distance(b Vec2i) float32 {
+	dx := v.X - b.X
+	dy := v.Y - b.Y
+	return float32(math.Sqrt(float64(dx*dx + dy*dy)))
 }
 
 type Entity struct {
 	name          string
-	sprite        map[Shape]Vec2i // location in spritesheet
-	shape         Shape
-	nextShape     Shape
-	dir           rl.Vector2
-	nextDir       rl.Vector2
+	sprite        map[Direction]Vec2i // location in spritesheet
+	dir           Direction
+	nextDir       Direction
+	vel           rl.Vector2
+	nextVel       rl.Vector2
 	tile          Vec2i
 	pixel         rl.Vector2
 	width         float32
@@ -57,19 +112,4 @@ type Entity struct {
 	speed         float32
 	slowTimer     float32
 	teleportTimer float32
-}
-
-func (s Shape) Direction() rl.Vector2 {
-	switch s {
-	case ShapeUp:
-		return rl.Vector2{Y: -1}
-	case ShapeRight:
-		return rl.Vector2{X: 1}
-	case ShapeDown:
-		return rl.Vector2{Y: 1}
-	case ShapeLeft:
-		return rl.Vector2{X: -1}
-	default:
-		panic("unhandled default case")
-	}
 }

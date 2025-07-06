@@ -2,6 +2,7 @@ package main
 
 import (
 	"flag"
+	"strings"
 
 	rl "github.com/gen2brain/raylib-go/raylib"
 )
@@ -14,6 +15,8 @@ const (
 	Zoom         = 4
 	TileSize     = 8
 	TileZoom     = TileSize * Zoom
+	ChaseBug     = true // error in chase mode in original game
+
 )
 
 var trainingMode bool
@@ -27,11 +30,10 @@ type Game struct {
 	shader    rl.Shader
 	debug     bool
 	boardNum  int
-	board     [][]Tile
+	maze      Maze
 	camera2   rl.Camera2D
 	paused    bool
 	highScore int
-	ghostMode GhostMode
 }
 
 func main() {
@@ -75,17 +77,16 @@ func initGame(font, texture rl.Texture2D, image *rl.Image) *Game {
 	g.texture = texture
 	g.image = image
 	g.shader = chromaShader()
-	g.board = make([][]Tile, GameHeight)
+	g.maze = make(Maze, GameHeight)
 	g.highScore = 0
-	g.ghostMode = Scatter
 
 	for i := 0; i < GameHeight; i++ {
-		g.board[i] = make([]Tile, GameWidth)
+		g.maze[i] = make([]Tile, GameWidth)
 	}
 
 	g.camera2 = rl.Camera2D{
-		Offset:   rl.Vector2{0, TopPadding * TileSize * Zoom},
-		Target:   rl.Vector2{0, 0},
+		Offset:   rl.Vector2{Y: TopPadding * TileSize * Zoom},
+		Target:   rl.Vector2{},
 		Rotation: 0,
 		Zoom:     1,
 	}
@@ -94,22 +95,87 @@ func initGame(font, texture rl.Texture2D, image *rl.Image) *Game {
 	g.mapBoard()
 	for y := 0; y < GameHeight; y++ {
 		for x := 0; x < GameWidth; x++ {
-			tile := g.board[y][x]
+			tile := g.maze[y][x]
 			if tile == Dot || tile == Power {
 				dots++
 			}
 		}
 	}
 
-	//g.printBoard(true)
+	// g.maze.String()
 
 	g.player = createPacker(dots)
 
 	g.ghosts = make([]*Ghost, 4)
-	g.ghosts[0] = createGhost(Blinky{})
+	g.ghosts[0] = createGhost(Blinky{}) // do not reorder ghosts
 	g.ghosts[1] = createGhost(Pinky{})
 	g.ghosts[2] = createGhost(Inky{})
 	g.ghosts[3] = createGhost(Clyde{})
 
 	return g
+}
+
+// always get starting "dot" color at boardNum pos 1,1
+// then go row by row to get either dot (.), power (o), border (pixelX) or empty (<sp>)
+
+func (g *Game) readPixelArea(startX, startY, width, height int32) (uint64, string) {
+
+	var result uint64
+	tile := strings.Builder{}
+
+	// Read each pixel in the specified area
+	for y := startY; y < startY+height; y++ {
+		for x := startX; x < startX+width; x++ {
+			// Get the color of the pixel at position (pixelX, pixelY)
+			result <<= 1
+
+			color := rl.GetImageColor(*g.image, x, y)
+			if color.R > 0 || color.G > 0 || color.B > 0 {
+				result |= 1
+				tile.WriteString("1")
+			} else {
+				tile.WriteString("0")
+			}
+		}
+		tile.WriteString("\n")
+	}
+
+	return result, tile.String()
+}
+
+func (g *Game) mapBoard() {
+
+	offset := g.boardNum * GameHeight * TileSize
+	var piece Tile
+	for y := 0; y < GameHeight; y++ {
+		for x := 0; x < GameWidth; x++ {
+			p, _ := g.readPixelArea(int32(x*TileSize), int32(y*TileSize+offset), TileSize, TileSize)
+			if p == 0 {
+				piece = Empty
+			} else if p == DotMask { // dot
+				piece = Dot
+			} else if p == PowerMask {
+				piece = Power
+			} else {
+				piece = Wall
+			}
+
+			g.maze[y][x] = piece
+		}
+	}
+
+	// find tunnels
+	for y := 0; y < GameHeight; y++ {
+		if g.maze[y][0] == Empty &&
+			(g.maze[y][1] == Empty || g.maze[y][1] == Dot) &&
+			(g.maze[y][2] == Empty || g.maze[y][2] == Dot) {
+			g.maze[y][0] = Tunnel
+		}
+
+		if (g.maze[y][GameWidth-3] == Empty || g.maze[y][GameWidth-3] == Dot) &&
+			(g.maze[y][GameWidth-2] == Empty || g.maze[y][GameWidth-2] == Dot) &&
+			g.maze[y][GameWidth-1] == Empty {
+			g.maze[y][GameWidth-1] = Tunnel
+		}
+	}
 }

@@ -11,25 +11,25 @@ type Packer struct {
 func createPacker(dots int) *Packer {
 	startX := 13
 	startY := 23
-	shape := ShapeLeft
+	shape := Left
 
 	return &Packer{
 		Entity: Entity{
 			name: "ms. packer",
-			sprite: map[Shape]Vec2i{
-				ShapeUp:    {456, 32},
-				ShapeRight: {456, 0},
-				ShapeDown:  {456, 48},
-				ShapeLeft:  {456, 16},
+			sprite: map[Direction]Vec2i{
+				Up:    {456, 32},
+				Right: {456, 0},
+				Down:  {456, 48},
+				Left:  {456, 16},
 			},
 			pixel:      rl.Vector2{X: float32(startX * TileSize * Zoom), Y: float32(startY * TileSize * Zoom)},
 			width:      16,
 			height:     16,
-			tile:       Vec2i{x: startX, y: startY},
-			shape:      shape,
-			nextShape:  shape,
-			dir:        shape.Direction(),
-			nextDir:    shape.Direction(),
+			tile:       Vec2i{X: startX, Y: startY},
+			dir:        shape,
+			nextDir:    shape,
+			vel:        shape.Vector(),
+			nextVel:    shape.Vector(),
 			frameTime:  0.0,
 			frameSpeed: 0.1,
 			numFrames:  3,

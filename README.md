@@ -8,3 +8,7 @@ To run:
 
     go mod tidy
     go run .
+
+## Background
+
+[The Pac-Man Dossier](https://www.gamedeveloper.com/design/the-pac-man-dossier)
