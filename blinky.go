@@ -37,6 +37,6 @@ func (b Blinky) Scatter() Vec2i {
 	return Vec2i{X: 26, Y: 1} // depends on board
 }
 
-func (b Blinky) ExitHouse(game *Game) bool {
+func (b Blinky) ExitHouse(_ *Game) bool {
 	return true
 }

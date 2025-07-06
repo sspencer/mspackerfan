@@ -49,9 +49,9 @@ func (b Clyde) Scatter() Vec2i {
 	return Vec2i{X: 26, Y: 29} // depends on board
 }
 
-func (b Clyde) ExitHouse(dots int, elapsedTime float32) bool {
-	if dots > 60 {
-		return elapsedTime > 15
+func (b Clyde) ExitHouse(game *Game) bool {
+	if game.dotsEaten > 60 {
+		return game.levelTime > 15
 	}
 
 	return false

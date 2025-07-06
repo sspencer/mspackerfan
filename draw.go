@@ -2,7 +2,6 @@ package main
 
 import (
 	"fmt"
-	"strings"
 
 	rl "github.com/gen2brain/raylib-go/raylib"
 )
@@ -42,13 +41,15 @@ func (g *Game) drawLayout() {
 	pixelOffset = 8
 	if g.debug {
 		bottom := int32(ScreenHeight * TileSize * Zoom)
-		p := g.player
-		msg := fmt.Sprintf("pos=(%d,%d) state=%s", p.tile.X, p.tile.Y, strings.ToUpper(g.ghosts[0].state.String()))
-		rl.DrawText(msg, 5, bottom-50, 20, rl.Green)
+		msg := fmt.Sprintf("%s %ds", g.ghosts[0].state, int(g.levelTime))
+		rl.DrawText(msg, 5, bottom-50, 24, rl.Green)
 
 	} else {
-		g.drawText(fmt.Sprintf("%d/%d", g.player.tile.X, g.player.tile.Y), 2, 34, pixelOffset, rl.White) // player 2 score
-		g.drawText(fmt.Sprintf("dots %d", g.player.dots), 19, 34, pixelOffset, rl.White)                 // player 2 score
+		bottom := int32(ScreenHeight * TileSize * Zoom)
+		msg := fmt.Sprintf("%s %ds", g.ghosts[0].state, int(g.levelTime))
+		rl.DrawText(msg, 5, bottom-50, 24, rl.Green)
+
+		g.drawText(fmt.Sprintf("dots %d", g.dotsEaten), 19, 34, pixelOffset, rl.White) // player 2 score
 	}
 
 }

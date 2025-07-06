@@ -15,12 +15,11 @@ const (
 type Packer struct {
 	Entity
 	score       int
-	dots        int
 	pauseFrames int
 	isEatingDot bool
 }
 
-func NewPacker(dots int) *Packer {
+func NewPacker() *Packer {
 	startX := 13
 	startY := 23
 	shape := Left
@@ -45,7 +44,6 @@ func NewPacker(dots int) *Packer {
 		},
 
 		score: 0,
-		dots:  dots,
 	}
 }
 
@@ -140,7 +138,7 @@ func (p *Packer) Update(game *Game) {
 			p.isEatingDot = true
 		} else if tile == Dot {
 			game.maze[p.tile.Y][p.tile.X] = Empty
-			p.dots--
+			game.dotsEaten++
 			p.pauseFrames = DotEatPause
 			p.isEatingDot = true
 		}

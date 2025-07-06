@@ -18,6 +18,8 @@ const (
 	Eaten
 	InHouse
 	LeavingHouse
+
+	BounceSpeed = 0.5
 )
 
 const (
@@ -139,7 +141,11 @@ func NewGhost(b Behavior) *Ghost {
 }
 
 func (g *Ghost) ChooseDirection(maze Maze, target Vec2i) Direction {
+
 	var validDirections []Direction
+	if g.dir == None {
+		return None
+	}
 	for _, dir := range []Direction{Up, Down, Left, Right} {
 		if dir == g.dir.Opposite() {
 			continue
@@ -192,6 +198,7 @@ func (g *Ghost) SetFrame() {
 
 func (g *Ghost) Update(game *Game) {
 	g.SetFrame()
+	g.SetState(game)
 
 	if g.pixelsMoved >= TileSize {
 		// Update tile position based on the last move
@@ -204,7 +211,6 @@ func (g *Ghost) Update(game *Game) {
 
 	var currentSpeed float32 = 0.0
 	if g.state == InHouse {
-
 		if g.pixelsMoved >= TileSize/2 {
 			g.bounce *= -1
 			g.dir = g.dir.Opposite()
@@ -213,11 +219,27 @@ func (g *Ghost) Update(game *Game) {
 			g.dir = g.dir.Opposite()
 		}
 
-		currentSpeed = float32(g.bounce) * 0.25
+		currentSpeed = float32(g.bounce) * BounceSpeed
 		if g.behavior.ExitHouse(game) {
-			fmt.Printf("Ghost %s leaving house\n", g.name)
 			g.state = LeavingHouse
 		}
+	} else if g.state == LeavingHouse {
+		if g.tile.Y == 14 {
+			if g.tile.X == 14 {
+				g.dir = Up
+			} else if g.tile.X < 14 {
+				g.dir = Right
+			} else {
+				g.dir = Left
+			}
+		} else {
+			g.state = Scatter
+			g.dir = Up
+			g.tile = Vec2i{X: 14, Y: 12}
+			g.pixelsMoved = TileSize
+		}
+		currentSpeed = BounceSpeed
+		g.vel = g.dir.Vector()
 	} else {
 		if g.state == Scatter {
 			g.target = g.behavior.Scatter()
@@ -225,8 +247,10 @@ func (g *Ghost) Update(game *Game) {
 			g.target = g.behavior.Chase(game)
 		}
 		g.dir = g.ChooseDirection(game.maze, g.target)
-		currentSpeed = g.calculateCurrentSpeed()
-		g.vel = g.dir.Vector()
+		if g.dir != None {
+			currentSpeed = g.Speed(game)
+			g.vel = g.dir.Vector()
+		}
 	}
 
 	if g.vel.X != 0 || g.vel.Y != 0 {
@@ -235,10 +259,20 @@ func (g *Ghost) Update(game *Game) {
 		clampedPixelsMoved := float32(math.Min(float64(g.pixelsMoved), float64(TileSize)))
 		visualOffsetX := float32(g.vel.X) * clampedPixelsMoved
 		visualOffsetY := float32(g.vel.Y) * clampedPixelsMoved
+		//orig := 0
 
-		if g.state == InHouse {
+		if g.state == InHouse || g.state == LeavingHouse {
+			//orig = TileSize / 2
 			visualOffsetX += TileSize / 2
 		}
+
+		if g.state == Scatter && g.dir == Up && g.tile.X == 14 && (g.tile.Y == 13 || g.tile.Y == 12) {
+			//orig = 123
+			visualOffsetX -= TileSize / 2
+		}
+		//if g.id == PinkyId {
+		//	fmt.Printf("%s: %s, off1=%d, %s\n", g.state, g.tile.String(), orig, g.dir)
+		//}
 		g.pixel.X = (float32(g.tile.X*TileSize) + visualOffsetX - TileSize/2) * Zoom
 		g.pixel.Y = (float32(g.tile.Y*TileSize) + visualOffsetY - TileSize/2) * Zoom
 	}
@@ -248,8 +282,8 @@ func (g *Ghost) InHouse() bool {
 	return g.tile.Y == 14 && (g.tile.X >= 12 && g.tile.X <= 16)
 }
 
-func (g *Ghost) calculateCurrentSpeed() float32 {
-	speed := g.GhostSpeed(1)
+func (g *Ghost) Speed(game *Game) float32 {
+	speed := ghostSpeed(game.level)
 
 	// Apply tunnel speed reduction
 	if g.InTunnel() {
@@ -263,8 +297,50 @@ func (g *Ghost) InTunnel() bool {
 	return false
 }
 
+func (g *Ghost) SetState(game *Game) {
+	if g.state != Scatter && g.state != Chase || game.debug {
+		return
+	}
+
+	level := game.level
+	if level < 0 {
+		level = 1
+	}
+
+	// a. Scatter (7s),
+	// b. Chase (20s)
+	// c. Scatter (7s)
+	// d. Chase (20s)
+	// e. Scatter (5s),
+	// f. Chase (20s),
+	// g. Scatter (5s),
+	// h. Chase indefinitely.
+	state := Chase
+	// TODO - change based on levels
+	if game.levelTime < 7 { // a
+		state = Scatter
+	} else if game.levelTime < 27 { // b
+		state = Chase
+	} else if game.levelTime < 34 { // c
+		state = Scatter
+	} else if game.levelTime < 54 { // d
+		state = Chase
+	} else if game.levelTime < 61 { // e
+		state = Scatter
+	} else if game.levelTime < 81 { // f
+		state = Chase
+	} else if game.levelTime < 86 { // g
+		state = Scatter
+	}
+
+	if g.id == PinkyId && g.state != state {
+		fmt.Printf("from %s to %s at %0.4f\n", g.state, state, game.levelTime)
+	}
+	g.state = state
+}
+
 // GhostSpeed returns ghost speed in pixels per frame based on level
-func (g *Ghost) GhostSpeed(level int) float32 {
+func ghostSpeed(level int) float32 {
 	// Ghost normal speed progression (slightly slower than Pac-Man)
 	var ghostSpeedTable = []float32{
 		84.48,   // Level 1: 96% of Pac-Man's speed

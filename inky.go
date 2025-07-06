@@ -66,9 +66,9 @@ func (b Inky) Scatter() Vec2i {
 	return Vec2i{X: 1, Y: 29} // depends on board
 }
 
-func (b Inky) ExitHouse(dots int, elapsedTime float32) bool {
-	if dots > 30 {
-		return elapsedTime > 7
+func (b Inky) ExitHouse(game *Game) bool {
+	if game.dotsEaten > 30 {
+		return game.levelTime > 7
 	}
 
 	return false

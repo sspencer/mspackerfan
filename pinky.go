@@ -57,6 +57,6 @@ func (b Pinky) Scatter() Vec2i {
 }
 
 func (b Pinky) ExitHouse(game *Game) bool {
-	return game.levelTime > 7.0
+	return game.levelTime > 1.0
 	//return true
 }

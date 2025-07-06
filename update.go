@@ -40,7 +40,7 @@ func (g *Game) Update() {
 		g.mapBoard()
 	}
 
-	if rl.IsKeyPressed(rl.KeyP) {
+	if rl.IsKeyPressed(rl.KeyP) || rl.IsKeyPressed(rl.KeySpace) {
 		g.paused = !g.paused
 	}
 

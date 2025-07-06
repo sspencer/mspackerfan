@@ -24,6 +24,7 @@ type Game struct {
 	ghosts      []*Ghost
 	shader      rl.Shader
 	boardNum    int
+	level       int
 	maze        Maze
 	camera2     rl.Camera2D
 	paused      bool
@@ -32,6 +33,7 @@ type Game struct {
 	highScore   int
 	startTime   float64
 	levelTime   float32
+	dotsEaten   int
 }
 
 func main() {
@@ -72,7 +74,7 @@ func initGame(font, texture rl.Texture2D, image *rl.Image) *Game {
 	g.maze = make(Maze, GameHeight)
 	g.highScore = 0
 	g.startTime = rl.GetTime()
-
+	g.level = 1
 	for i := 0; i < GameHeight; i++ {
 		g.maze[i] = make([]Tile, GameWidth)
 	}
@@ -84,25 +86,26 @@ func initGame(font, texture rl.Texture2D, image *rl.Image) *Game {
 		Zoom:     1,
 	}
 
-	dots := 0
 	g.mapBoard()
-	for y := 0; y < GameHeight; y++ {
-		for x := 0; x < GameWidth; x++ {
-			tile := g.maze[y][x]
-			if tile == Dot {
-				dots++
-			}
-		}
-	}
+
+	//dots := 0
+	//for y := 0; y < GameHeight; y++ {
+	//	for x := 0; x < GameWidth; x++ {
+	//		tile := g.maze[y][x]
+	//		if tile == Dot {
+	//			dots++
+	//		}
+	//	}
+	//}
 
 	// g.maze.String()
 
-	g.player = NewPacker(dots)
-	g.ghosts = make([]*Ghost, 0, 1)
-	//g.ghosts = append(g.ghosts, NewGhost(Blinky{})) // do not reorder ghosts
-	g.ghosts = append(g.ghosts, NewGhost(Pinky{}))
-	//g.ghosts = append(g.ghosts, NewGhost(Inky{}))
-	//g.ghosts = append(g.ghosts, NewGhost(Clyde{}))
+	g.player = NewPacker()
+	g.ghosts = make([]*Ghost, 4)
+	g.ghosts[0] = NewGhost(Blinky{}) // do not reorder ghosts
+	g.ghosts[1] = NewGhost(Pinky{})
+	g.ghosts[2] = NewGhost(Inky{})
+	g.ghosts[3] = NewGhost(Clyde{})
 
 	return g
 }
