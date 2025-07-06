@@ -62,6 +62,10 @@ func (g *Game) Update(deltaTime float32) {
 		if rl.IsKeyPressed(rl.KeySpace) {
 			trainingMove = true
 		}
+
+		if rl.IsKeyPressed(rl.KeyT) {
+			trainingMode = !trainingMode
+		}
 	}
 
 	if rl.IsKeyPressed(rl.KeyP) {

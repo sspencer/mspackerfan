@@ -42,12 +42,12 @@ func main() {
 
 	rl.SetTraceLogLevel(rl.LogWarning)
 
-	rl.SetConfigFlags(rl.FlagVsyncHint)
+	//rl.SetConfigFlags(rl.FlagVsyncHint)
 
 	rl.InitWindow(GameWidth*TileSize*Zoom, ScreenHeight*TileSize*Zoom, "Ms. Packer Fan")
 	defer rl.CloseWindow()
 
-	//rl.SetTargetFPS(60)
+	rl.SetTargetFPS(60)
 
 	font := rl.LoadTexture("font.png")
 	defer rl.UnloadTexture(font)
