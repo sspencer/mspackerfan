@@ -5,6 +5,7 @@ import (
 )
 
 func (g *Game) Update() {
+	g.levelTime = float32(rl.GetTime() - g.startTime)
 	p := g.player
 	if rl.IsKeyPressed(rl.KeyRight) {
 		p.nextDir = Right

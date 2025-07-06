@@ -35,7 +35,9 @@ func (b Inky) Sprite() Vec2i {
 	return Vec2i{X: 520, Y: 96}
 }
 
-func (b Inky) Chase(p *Packer, g *Ghost) Vec2i {
+func (b Inky) Chase(game *Game) Vec2i {
+	p := game.player
+	g := game.ghosts[0] // Blinky
 	var pivot Vec2i
 	switch p.dir {
 	case Up:
@@ -62,4 +64,12 @@ func (b Inky) Chase(p *Packer, g *Ghost) Vec2i {
 
 func (b Inky) Scatter() Vec2i {
 	return Vec2i{X: 1, Y: 29} // depends on board
+}
+
+func (b Inky) ExitHouse(dots int, elapsedTime float32) bool {
+	if dots > 30 {
+		return elapsedTime > 7
+	}
+
+	return false
 }

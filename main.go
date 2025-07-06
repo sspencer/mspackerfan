@@ -30,6 +30,8 @@ type Game struct {
 	debug       bool
 	debugLayout bool
 	highScore   int
+	startTime   float64
+	levelTime   float32
 }
 
 func main() {
@@ -69,6 +71,7 @@ func initGame(font, texture rl.Texture2D, image *rl.Image) *Game {
 	g.shader = chromaShader()
 	g.maze = make(Maze, GameHeight)
 	g.highScore = 0
+	g.startTime = rl.GetTime()
 
 	for i := 0; i < GameHeight; i++ {
 		g.maze[i] = make([]Tile, GameWidth)

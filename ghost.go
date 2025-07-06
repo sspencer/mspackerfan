@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"math"
 	"math/rand/v2"
 
@@ -25,6 +26,43 @@ const (
 	InkyId
 	ClydeId
 )
+
+type Behavior interface {
+	Id() GhostId
+	Color() rl.Color
+	StartingTile() Vec2i
+	StartingDir() Direction
+	Sprite() Vec2i
+	Chase(game *Game) Vec2i
+	Scatter() Vec2i
+	ExitHouse(game *Game) bool
+}
+
+type Ghost struct {
+	Entity
+	id       GhostId
+	state    GhostState
+	behavior Behavior
+	color    rl.Color
+	target   Vec2i // temporary for training
+	bounce   int
+}
+
+// Blinky is the red behavior
+type Blinky struct {
+}
+
+// Pinky is the pink behavior
+type Pinky struct {
+}
+
+// Inky is the blue behavior
+type Inky struct {
+}
+
+// Clyde is the orange behavior
+type Clyde struct {
+}
 
 func (g GhostId) String() string {
 	switch g {
@@ -58,42 +96,6 @@ func (g GhostState) String() string {
 	default:
 		panic("unhandled default case")
 	}
-}
-
-type Behavior interface {
-	Id() GhostId
-	Color() rl.Color
-	StartingTile() Vec2i
-	StartingDir() Direction
-	Sprite() Vec2i
-	Chase(packer *Packer, ghost *Ghost) Vec2i
-	Scatter() Vec2i
-}
-
-type Ghost struct {
-	Entity
-	id       GhostId
-	state    GhostState
-	behavior Behavior
-	color    rl.Color
-	target   Vec2i // temporary for training
-	bounce   int
-}
-
-// Blinky is the red behavior
-type Blinky struct {
-}
-
-// Pinky is the pink behavior
-type Pinky struct {
-}
-
-// Inky is the blue behavior
-type Inky struct {
-}
-
-// Clyde is the orange behavior
-type Clyde struct {
 }
 
 func NewGhost(b Behavior) *Ghost {
@@ -202,7 +204,7 @@ func (g *Ghost) Update(game *Game) {
 
 	var currentSpeed float32 = 0.0
 	if g.state == InHouse {
-		currentSpeed = 0.1
+
 		if g.pixelsMoved >= TileSize/2 {
 			g.bounce *= -1
 			g.dir = g.dir.Opposite()
@@ -211,18 +213,16 @@ func (g *Ghost) Update(game *Game) {
 			g.dir = g.dir.Opposite()
 		}
 
-		currentSpeed = float32(g.bounce) * 0.1
-
-		//fmt.Printf("In house: %s dir=%s pixels: %f\n", g.name, g.dir, g.pixelsMoved)
+		currentSpeed = float32(g.bounce) * 0.25
+		if g.behavior.ExitHouse(game) {
+			fmt.Printf("Ghost %s leaving house\n", g.name)
+			g.state = LeavingHouse
+		}
 	} else {
 		if g.state == Scatter {
 			g.target = g.behavior.Scatter()
 		} else if g.state == Chase {
-			if g.id == InkyId {
-				g.target = g.behavior.Chase(game.player, game.ghosts[0]) // ghost 0 is Blinky
-			} else {
-				g.target = g.behavior.Chase(game.player, g)
-			}
+			g.target = g.behavior.Chase(game)
 		}
 		g.dir = g.ChooseDirection(game.maze, g.target)
 		currentSpeed = g.calculateCurrentSpeed()

@@ -30,10 +30,16 @@ func (b Clyde) Sprite() Vec2i {
 	return Vec2i{X: 520, Y: 112}
 }
 
-func (b Clyde) Chase(p *Packer, g *Ghost) Vec2i {
-	d := p.tile.Distance(g.tile)
-	if d > 8 {
-		return p.tile
+func (b Clyde) Chase(game *Game) Vec2i {
+	// find self
+	for _, ghost := range game.ghosts {
+		if ghost.id == b.Id() {
+			d := game.player.tile.Distance(ghost.tile)
+			if d > 8 {
+				return game.player.tile
+			}
+			break
+		}
 	}
 
 	return b.Scatter()
@@ -41,4 +47,12 @@ func (b Clyde) Chase(p *Packer, g *Ghost) Vec2i {
 
 func (b Clyde) Scatter() Vec2i {
 	return Vec2i{X: 26, Y: 29} // depends on board
+}
+
+func (b Clyde) ExitHouse(dots int, elapsedTime float32) bool {
+	if dots > 60 {
+		return elapsedTime > 15
+	}
+
+	return false
 }

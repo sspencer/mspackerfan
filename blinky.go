@@ -29,10 +29,14 @@ func (b Blinky) Sprite() Vec2i {
 	return Vec2i{X: 520, Y: 64}
 }
 
-func (b Blinky) Chase(packer *Packer, _ *Ghost) Vec2i {
-	return packer.tile
+func (b Blinky) Chase(game *Game) Vec2i {
+	return game.player.tile
 }
 
 func (b Blinky) Scatter() Vec2i {
 	return Vec2i{X: 26, Y: 1} // depends on board
+}
+
+func (b Blinky) ExitHouse(game *Game) bool {
+	return true
 }

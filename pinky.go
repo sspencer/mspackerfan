@@ -31,7 +31,8 @@ func (b Pinky) Sprite() Vec2i {
 	return Vec2i{X: 520, Y: 80}
 }
 
-func (b Pinky) Chase(p *Packer, _ *Ghost) Vec2i {
+func (b Pinky) Chase(game *Game) Vec2i {
+	p := game.player
 	switch p.dir {
 	case Up:
 		if ChaseBug {
@@ -53,4 +54,9 @@ func (b Pinky) Chase(p *Packer, _ *Ghost) Vec2i {
 
 func (b Pinky) Scatter() Vec2i {
 	return Vec2i{X: 1, Y: 1} // depends on board
+}
+
+func (b Pinky) ExitHouse(game *Game) bool {
+	return game.levelTime > 7.0
+	//return true
 }
