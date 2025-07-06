@@ -19,17 +19,10 @@ func (b Clyde) Color() rl.Color {
 }
 
 func (b Clyde) StartingTile() Vec2i {
-	if trainingMode {
-		return Vec2i{X: 15, Y: 17}
-	}
 	return Vec2i{X: 16, Y: 14}
 }
 
 func (b Clyde) StartingDir() Direction {
-	if trainingMode {
-		return Left
-	}
-
 	return Down
 }
 

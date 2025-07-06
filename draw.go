@@ -40,10 +40,10 @@ func (g *Game) drawLayout() {
 	g.drawText("0", 24, y, pixelOffset, rl.White)                              // player 2 score
 
 	pixelOffset = 8
-	if trainingMode {
+	if g.debug {
 		bottom := int32(ScreenHeight * TileSize * Zoom)
 		p := g.player
-		msg := fmt.Sprintf("pos=(%d,%d) mode=%s", p.tile.X, p.tile.Y, strings.ToUpper(g.ghosts[0].mode.String()))
+		msg := fmt.Sprintf("pos=(%d,%d) state=%s", p.tile.X, p.tile.Y, strings.ToUpper(g.ghosts[0].state.String()))
 		rl.DrawText(msg, 5, bottom-50, 20, rl.Green)
 
 	} else {
@@ -64,6 +64,9 @@ func (g *Game) drawBoard() {
 
 	rl.DrawTexturePro(g.texture, src, dst, rl.Vector2{}, 0, rl.White)
 
+	// source location from original artwork texture of a
+	// dot and power up so that the dots are the same
+	// color as you see in that image
 	var dotX, dotY, powerX, powerY float32 = 1, 1, 1, 2
 
 	if g.boardNum == 1 {
@@ -98,33 +101,33 @@ func (g *Game) drawBoard() {
 		}
 	}
 
-	if g.debug {
+	if g.debugLayout {
 		g.drawCheckerBoard()
 	}
 
 }
 
 func (g *Game) drawGhosts() {
-	// TODO move texture to entity and change receiver from Game to Entity
 	for _, e := range g.ghosts {
 		loc := e.sprite[e.dir]
 		sx := float32(loc.X) + float32(e.frame)*e.width
 		sy := float32(loc.Y)
 		src := rl.NewRectangle(sx, sy, e.width, e.height) // sprite
 
-		offsetX, offsetY := float32(-4), float32(-4)
-		if e.tile.Y == 14 && (e.tile.X >= 12 && e.tile.X <= 16) {
+		offsetX, offsetY := float32(0), float32(0)
+		if e.InHouse() {
 			offsetX = float32(-7)
 		}
 
 		dst := rl.NewRectangle(e.pixel.X+offsetX*Zoom, e.pixel.Y+offsetY*Zoom, e.width*Zoom, e.height*Zoom)
 		rl.DrawTexturePro(g.texture, src, dst, rl.Vector2{}, 0, rl.White)
 
-		if trainingMode && e.tile.X != 0 && e.tile.Y != 0 {
-			rec := rl.NewRectangle(float32(e.target.X*TileSize*Zoom), float32(e.target.Y*TileSize*Zoom), TileSize*Zoom, TileSize*Zoom)
-			rl.DrawRectangleRec(rec, e.color)
-			v1 := rl.Vector2{X: float32(e.target.X * TileSize * Zoom), Y: float32(e.target.Y * TileSize * Zoom)}
-			v2 := rl.Vector2{X: float32(e.tile.X * TileSize * Zoom), Y: float32(e.tile.Y * TileSize * Zoom)}
+		if g.debug && e.tile.X != 0 && e.tile.Y != 0 {
+			f := TileSize * Zoom / 2
+			target := e.target.Clamp()
+			rl.DrawCircle(int32(target.X*TileSize*Zoom+f), int32(target.Y*TileSize*Zoom+f), TileSize*Zoom, rl.ColorAlpha(e.color, 0.5))
+			v1 := rl.Vector2{X: float32(target.X*TileSize*Zoom + f), Y: float32(target.Y*TileSize*Zoom + f)}
+			v2 := rl.Vector2{X: float32(e.tile.X*TileSize*Zoom + f), Y: float32(e.tile.Y*TileSize*Zoom + f)}
 			rl.DrawLineEx(v1, v2, 4, e.color)
 		}
 	}
@@ -138,9 +141,7 @@ func (g *Game) drawPlayer() {
 	sy := float32(loc.Y)
 	src := rl.NewRectangle(sx, sy, s.width, s.height) // sprite
 
-	offsetX := float32(-4)
-	offsetY := float32(-4)
-	dst := rl.NewRectangle(s.pixel.X+offsetX*Zoom, s.pixel.Y+offsetY*Zoom, s.width*Zoom, s.height*Zoom)
+	dst := rl.NewRectangle(s.pixel.X, s.pixel.Y, s.width*Zoom, s.height*Zoom)
 	rl.DrawTexturePro(g.texture, src, dst, rl.Vector2{}, 0, rl.White)
 }
 

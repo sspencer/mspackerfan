@@ -1,8 +1,6 @@
 package main
 
 import (
-	"fmt"
-
 	rl "github.com/gen2brain/raylib-go/raylib"
 )
 
@@ -26,17 +24,10 @@ func (b Inky) Color() rl.Color {
 }
 
 func (b Inky) StartingTile() Vec2i {
-	if trainingMode {
-		return Vec2i{X: 5, Y: 4}
-	}
 	return Vec2i{X: 12, Y: 14}
 }
 
 func (b Inky) StartingDir() Direction {
-	if trainingMode {
-		return Left
-	}
-
 	return Down
 }
 
@@ -45,29 +36,27 @@ func (b Inky) Sprite() Vec2i {
 }
 
 func (b Inky) Chase(p *Packer, g *Ghost) Vec2i {
-	var offset Vec2i
+	var pivot Vec2i
 	switch p.dir {
 	case Up:
 		if ChaseBug {
-			offset.X = -2
-			offset.Y = -2
+			pivot = p.tile.Add(-2, -2)
 		} else {
-			offset.Y = -2
+			pivot = p.tile.Add(0, -2)
 		}
 	case Down:
-		offset.Y = 2
+		pivot = p.tile.Add(0, 2)
 	case Left:
-		offset.X = -2
+		pivot = p.tile.Add(-2, 0)
 	case Right:
-		offset.X = 2
+		pivot = p.tile.Add(2, 0)
 	default:
 		panic("unhandled default case")
 	}
 
-	pivot := p.tile.Add(offset.X, offset.Y)
 	dx := pivot.X - g.tile.X
 	dy := pivot.Y - g.tile.Y
-	fmt.Printf("dx: %d, dy: %d\n", dx, dy)
+
 	return Vec2i{X: g.tile.X + 2*dx, Y: g.tile.Y + 2*dy}
 }
 

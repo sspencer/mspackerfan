@@ -1,7 +1,6 @@
 package main
 
 import (
-	"flag"
 	"strings"
 
 	rl "github.com/gen2brain/raylib-go/raylib"
@@ -14,35 +13,27 @@ const (
 	GameHeight   = 31
 	Zoom         = 4
 	TileSize     = 8
-	TileZoom     = TileSize * Zoom
-	ChaseBug     = true // error in chase mode in original game
-
+	ChaseBug     = true // error in chase state in original game
 )
 
-var trainingMode bool
-
 type Game struct {
-	font      rl.Texture2D
-	texture   rl.Texture2D
-	image     *rl.Image
-	player    *Packer
-	ghosts    []*Ghost
-	shader    rl.Shader
-	debug     bool
-	boardNum  int
-	maze      Maze
-	camera2   rl.Camera2D
-	paused    bool
-	highScore int
+	font        rl.Texture2D
+	texture     rl.Texture2D
+	image       *rl.Image
+	player      *Packer
+	ghosts      []*Ghost
+	shader      rl.Shader
+	boardNum    int
+	maze        Maze
+	camera2     rl.Camera2D
+	paused      bool
+	debug       bool
+	debugLayout bool
+	highScore   int
 }
 
 func main() {
-	flag.BoolVar(&trainingMode, "t", false, "training mode")
-	flag.Parse()
-
 	rl.SetTraceLogLevel(rl.LogWarning)
-
-	//rl.SetConfigFlags(rl.FlagVsyncHint)
 
 	rl.InitWindow(GameWidth*TileSize*Zoom, ScreenHeight*TileSize*Zoom, "Ms. Packer Fan")
 	defer rl.CloseWindow()
@@ -59,8 +50,7 @@ func main() {
 	g := initGame(font, texture, image)
 
 	for !rl.WindowShouldClose() {
-		dt := rl.GetFrameTime()
-		g.Update(dt)
+		g.Update()
 
 		rl.BeginDrawing()
 
@@ -96,7 +86,7 @@ func initGame(font, texture rl.Texture2D, image *rl.Image) *Game {
 	for y := 0; y < GameHeight; y++ {
 		for x := 0; x < GameWidth; x++ {
 			tile := g.maze[y][x]
-			if tile == Dot || tile == Power {
+			if tile == Dot {
 				dots++
 			}
 		}
@@ -104,13 +94,12 @@ func initGame(font, texture rl.Texture2D, image *rl.Image) *Game {
 
 	// g.maze.String()
 
-	g.player = createPacker(dots)
-
-	g.ghosts = make([]*Ghost, 4)
-	g.ghosts[0] = createGhost(Blinky{}) // do not reorder ghosts
-	g.ghosts[1] = createGhost(Pinky{})
-	g.ghosts[2] = createGhost(Inky{})
-	g.ghosts[3] = createGhost(Clyde{})
+	g.player = NewPacker(dots)
+	g.ghosts = make([]*Ghost, 0, 1)
+	//g.ghosts = append(g.ghosts, NewGhost(Blinky{})) // do not reorder ghosts
+	g.ghosts = append(g.ghosts, NewGhost(Pinky{}))
+	//g.ghosts = append(g.ghosts, NewGhost(Inky{}))
+	//g.ghosts = append(g.ghosts, NewGhost(Clyde{}))
 
 	return g
 }

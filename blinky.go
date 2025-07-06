@@ -18,11 +18,11 @@ func (b Blinky) Color() rl.Color {
 }
 
 func (b Blinky) StartingTile() Vec2i {
-	return Vec2i{X: 9, Y: 14}
+	return Vec2i{X: 13, Y: 11}
 }
 
 func (b Blinky) StartingDir() Direction {
-	return Up
+	return Left
 }
 
 func (b Blinky) Sprite() Vec2i {

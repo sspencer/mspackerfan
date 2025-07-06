@@ -20,16 +20,10 @@ func (b Pinky) Color() rl.Color {
 }
 
 func (b Pinky) StartingTile() Vec2i {
-	if trainingMode {
-		return Vec2i{X: 24, Y: 21}
-	}
 	return Vec2i{X: 14, Y: 14}
 }
 
 func (b Pinky) StartingDir() Direction {
-	if trainingMode {
-		return Down
-	}
 	return Up
 }
 

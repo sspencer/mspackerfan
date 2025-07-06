@@ -1,18 +1,10 @@
 package main
 
 import (
+	"fmt"
 	"math"
 
 	rl "github.com/gen2brain/raylib-go/raylib"
-)
-
-const (
-	GhostSpeed    = 50   // speed through maze in level 1
-	PlayerSpeed   = 60   // speed through maze in level 1
-	SlowSpeed     = 45   // slow down about 15-25% after eating dots
-	SlowTime      = 0.25 // slow down for this long
-	TeleportSpeed = 10   // slow down about 15-25% after eating dots
-	TeleportTime  = 0.75 // slow down for this long
 )
 
 type Direction int
@@ -24,6 +16,22 @@ const (
 	Down
 	Left
 )
+
+type Entity struct {
+	name        string
+	sprite      map[Direction]Vec2i // location in spritesheet
+	dir         Direction
+	nextDir     Direction
+	vel         Vec2i
+	nextVel     Vec2i
+	tile        Vec2i
+	pixel       rl.Vector2
+	pixelsMoved float32
+	width       float32
+	height      float32
+	frameCount  int
+	frame       int
+}
 
 func (d Direction) String() string {
 	switch d {
@@ -55,16 +63,16 @@ func (d Direction) Opposite() Direction {
 	}
 }
 
-func (d Direction) Vector() rl.Vector2 {
+func (d Direction) Vector() Vec2i {
 	switch d {
 	case Up:
-		return rl.Vector2{Y: -1}
+		return Vec2i{Y: -1}
 	case Right:
-		return rl.Vector2{X: 1}
+		return Vec2i{X: 1}
 	case Down:
-		return rl.Vector2{Y: 1}
+		return Vec2i{Y: 1}
 	case Left:
-		return rl.Vector2{X: -1}
+		return Vec2i{X: -1}
 	default:
 		panic("unhandled default case")
 	}
@@ -81,6 +89,12 @@ type Vec2i struct {
 	X, Y int
 }
 
+var ZeroVec = Vec2i{X: 0, Y: 0}
+
+func (v Vec2i) String() string {
+	return fmt.Sprintf("(%d, %d)", v.X, v.Y)
+}
+
 func (v Vec2i) Add(x, y int) Vec2i {
 	return Vec2i{
 		X: v.X + x,
@@ -94,22 +108,26 @@ func (v Vec2i) Distance(b Vec2i) float32 {
 	return float32(math.Sqrt(float64(dx*dx + dy*dy)))
 }
 
-type Entity struct {
-	name          string
-	sprite        map[Direction]Vec2i // location in spritesheet
-	dir           Direction
-	nextDir       Direction
-	vel           rl.Vector2
-	nextVel       rl.Vector2
-	tile          Vec2i
-	pixel         rl.Vector2
-	width         float32
-	height        float32
-	frameTime     float32
-	frameSpeed    float32
-	numFrames     int
-	frame         int
-	speed         float32
-	slowTimer     float32
-	teleportTimer float32
+func (v Vec2i) IsZero() bool {
+	return v.X == 0 && v.Y == 0
+}
+
+func (v Vec2i) InMaze() bool {
+	return v.X >= 0 && v.X < GameWidth && v.Y >= 0 && v.Y < GameHeight
+}
+
+func (v Vec2i) Clamp() Vec2i {
+	if v.X < 0 {
+		v.X = 0
+	} else if v.X > GameWidth-1 {
+		v.X = GameWidth - 1
+	}
+
+	if v.Y < 0 {
+		v.Y = 0
+	} else if v.Y > GameHeight-1 {
+		v.Y = GameHeight - 1
+	}
+
+	return v
 }
