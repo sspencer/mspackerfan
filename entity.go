@@ -131,3 +131,16 @@ func (v Vec2i) Clamp() Vec2i {
 
 	return v
 }
+
+func (e *Entity) move(speed float32) {
+	if e.vel.X != 0 || e.vel.Y != 0 {
+		e.pixelsMoved += speed
+
+		clampedPixelsMoved := float32(math.Min(float64(e.pixelsMoved), float64(TileSize)))
+		visualOffsetX := float32(e.vel.X) * clampedPixelsMoved
+		visualOffsetY := float32(e.vel.Y) * clampedPixelsMoved
+
+		e.pixel.X = (float32(e.tile.X*TileSize) + visualOffsetX - TileSize/2) * Zoom
+		e.pixel.Y = (float32(e.tile.Y*TileSize) + visualOffsetY - TileSize/2) * Zoom
+	}
+}

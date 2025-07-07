@@ -67,6 +67,9 @@ func (b Inky) Scatter() Vec2i {
 }
 
 func (b Inky) ExitHouse(game *Game) bool {
+	if game.debug {
+		return game.levelTime > 2.0
+	}
 	if game.dotsEaten > 30 {
 		return game.levelTime > 7
 	}

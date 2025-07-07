@@ -39,18 +39,11 @@ func (g *Game) drawLayout() {
 	g.drawText("0", 24, y, pixelOffset, rl.White)                              // player 2 score
 
 	pixelOffset = 8
-	if g.debug {
-		bottom := int32(ScreenHeight * TileSize * Zoom)
-		msg := fmt.Sprintf("%s %ds", g.ghosts[0].state, int(g.levelTime))
-		rl.DrawText(msg, 5, bottom-50, 24, rl.Green)
+	bottom := int32(ScreenHeight * TileSize * Zoom)
+	msg := fmt.Sprintf("state: %s, dots: %d, time: %0.1f", g.ghosts[0].state, g.dotsEaten, g.levelTime)
+	rl.DrawText(msg, 5, bottom-50, 24, rl.Green)
 
-	} else {
-		bottom := int32(ScreenHeight * TileSize * Zoom)
-		msg := fmt.Sprintf("%s %ds", g.ghosts[0].state, int(g.levelTime))
-		rl.DrawText(msg, 5, bottom-50, 24, rl.Green)
-
-		g.drawText(fmt.Sprintf("dots %d", g.dotsEaten), 19, 34, pixelOffset, rl.White) // player 2 score
-	}
+	//g.drawText(fmt.Sprintf("dots %d", g.dotsEaten), 19, 34, pixelOffset, rl.White) // player 2 score
 
 }
 
@@ -110,25 +103,25 @@ func (g *Game) drawBoard() {
 
 func (g *Game) drawGhosts() {
 	for _, e := range g.ghosts {
-		loc := e.sprite[e.dir]
+		var loc Vec2i
+		if e.state == Frightened {
+			loc = e.fright[e.frightState]
+		} else {
+			loc = e.sprite[e.dir]
+		}
 		sx := float32(loc.X) + float32(e.frame)*e.width
 		sy := float32(loc.Y)
 		src := rl.NewRectangle(sx, sy, e.width, e.height) // sprite
 
-		offsetX, offsetY := float32(0), float32(0)
-		if e.InHouse() {
-			offsetX = float32(-7)
-		}
-
-		dst := rl.NewRectangle(e.pixel.X+offsetX*Zoom, e.pixel.Y+offsetY*Zoom, e.width*Zoom, e.height*Zoom)
+		dst := rl.NewRectangle(e.pixel.X, e.pixel.Y, e.width*Zoom, e.height*Zoom)
 		rl.DrawTexturePro(g.texture, src, dst, rl.Vector2{}, 0, rl.White)
 
 		if g.debug && e.tile.X != 0 && e.tile.Y != 0 {
-			f := TileSize * Zoom / 2
+			// f := TileSize * Zoom / 2
 			target := e.target.Clamp()
-			rl.DrawCircle(int32(target.X*TileSize*Zoom+f), int32(target.Y*TileSize*Zoom+f), TileSize*Zoom, rl.ColorAlpha(e.color, 0.5))
-			v1 := rl.Vector2{X: float32(target.X*TileSize*Zoom + f), Y: float32(target.Y*TileSize*Zoom + f)}
-			v2 := rl.Vector2{X: float32(e.tile.X*TileSize*Zoom + f), Y: float32(e.tile.Y*TileSize*Zoom + f)}
+			rl.DrawCircle(int32(target.X*TileSize*Zoom), int32(target.Y*TileSize*Zoom), TileSize*Zoom, rl.ColorAlpha(e.color, 0.5))
+			v1 := rl.Vector2{X: float32(target.X * TileSize * Zoom), Y: float32(target.Y * TileSize * Zoom)}
+			v2 := rl.Vector2{X: float32(e.tile.X * TileSize * Zoom), Y: float32(e.tile.Y * TileSize * Zoom)}
 			rl.DrawLineEx(v1, v2, 4, e.color)
 		}
 	}

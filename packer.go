@@ -1,8 +1,6 @@
 package main
 
 import (
-	"math"
-
 	rl "github.com/gen2brain/raylib-go/raylib"
 )
 
@@ -114,19 +112,7 @@ func (p *Packer) Update(game *Game) {
 	}
 
 	// --- Calculate current speed based on context ---
-	currentSpeed := p.calculateCurrentSpeed()
-
-	// --- Advance Pac-Man ---
-	if p.vel.X != 0 || p.vel.Y != 0 {
-		p.pixelsMoved += currentSpeed
-
-		clampedPixelsMoved := float32(math.Min(float64(p.pixelsMoved), float64(TileSize)))
-		visualOffsetX := float32(p.vel.X) * clampedPixelsMoved
-		visualOffsetY := float32(p.vel.Y) * clampedPixelsMoved
-
-		p.pixel.X = (float32(p.tile.X*TileSize) + visualOffsetX - TileSize/2) * Zoom
-		p.pixel.Y = (float32(p.tile.Y*TileSize) + visualOffsetY - TileSize/2) * Zoom
-	}
+	p.move(p.calculateSpeed(game.level))
 
 	// --- Eat Dots (only check once per tile entry) ---
 	if p.tile.InMaze() && !p.isEatingDot {
@@ -145,8 +131,8 @@ func (p *Packer) Update(game *Game) {
 	}
 }
 
-func (p *Packer) calculateCurrentSpeed() float32 {
-	speed := p.PackerSpeed(1)
+func (p *Packer) calculateSpeed(level int) float32 {
+	speed := playerSpeed(level)
 
 	// Apply tunnel speed reduction
 	if p.InTunnel() {
@@ -183,7 +169,7 @@ func (p *Packer) canMove(maze Maze, dir Vec2i) bool {
 
 // PackerSpeed returns players's speed in pixels per frame based on level
 // Level 1 returns 88.0 pixels/second (base speed)
-func (p *Packer) PackerSpeed(level int) float32 {
+func playerSpeed(level int) float32 {
 
 	// Arcade-accurate speed progression based on research
 	// Speeds are in pixels per second, converted to pixels per frame at 60 FPS

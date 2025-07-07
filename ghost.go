@@ -19,7 +19,19 @@ const (
 	InHouse
 	LeavingHouse
 
-	BounceSpeed = 0.5
+	BounceSpeed           = 0.5
+	FrightenedSpeedFactor = 0.5
+)
+
+type FrightState int
+
+const (
+	FrightBlue FrightState = iota
+	FrightWhite
+	FrightEyesUp
+	FrightEyesRight
+	FrightEyesDown
+	FrightEyesLeft
 )
 
 const (
@@ -42,12 +54,14 @@ type Behavior interface {
 
 type Ghost struct {
 	Entity
-	id       GhostId
-	state    GhostState
-	behavior Behavior
-	color    rl.Color
-	target   Vec2i // temporary for training
-	bounce   int
+	id          GhostId
+	state       GhostState
+	frightState FrightState
+	behavior    Behavior
+	fright      map[FrightState]Vec2i
+	color       rl.Color
+	target      Vec2i // temporary for training
+	bounce      int
 }
 
 // Blinky is the red behavior
@@ -131,6 +145,14 @@ func NewGhost(b Behavior) *Ghost {
 		behavior: b,
 		bounce:   1,
 		state:    Scatter,
+		fright: map[FrightState]Vec2i{
+			FrightBlue:      {584, 64}, // 2 frames
+			FrightWhite:     {616, 64}, // 2 frames
+			FrightEyesUp:    {616, 80}, // 1 frame
+			FrightEyesRight: {584, 80},
+			FrightEyesDown:  {632, 80},
+			FrightEyesLeft:  {600, 80},
+		},
 	}
 
 	if g.InHouse() {
@@ -143,9 +165,9 @@ func NewGhost(b Behavior) *Ghost {
 func (g *Ghost) ChooseDirection(maze Maze, target Vec2i) Direction {
 
 	var validDirections []Direction
-	if g.dir == None {
-		return None
-	}
+	//if g.dir == None {
+	//	return None
+	//}
 	for _, dir := range []Direction{Up, Down, Left, Right} {
 		if dir == g.dir.Opposite() {
 			continue
@@ -181,7 +203,11 @@ func (g *Ghost) SetFrame() {
 	if g.state == InHouse {
 		g.frame = 0
 		return
+	} else if g.state == Frightened && g.frightState != FrightBlue && g.frightState != FrightWhite {
+		g.frame = 0
+		return
 	}
+
 	framesPerState := 15
 	cycleLength := 2 * framesPerState // 30 frames for full cycle
 	frameInCycle := g.frameCount % cycleLength
@@ -198,6 +224,49 @@ func (g *Ghost) SetFrame() {
 
 func (g *Ghost) Update(game *Game) {
 	g.SetFrame()
+	g.Fright(game)
+	g.SetState(game)
+	if g.pixelsMoved >= TileSize {
+		// Update tile position based on the last move
+		g.tile = g.tile.Add(g.vel.X, g.vel.Y)
+		// --- Tunnel Teleportation ---
+		// if tunnel something
+
+		g.pixelsMoved = 0
+	}
+
+	if g.InHouse() {
+		return
+	} else if g.state == Scatter {
+		g.target = g.behavior.Scatter()
+	} else if g.state == Chase {
+		g.target = g.behavior.Chase(game) // ghost 0 is Blinky
+	}
+
+	g.dir = g.ChooseDirection(game.maze, g.target)
+	if g.dir == None {
+		fmt.Println("no direction")
+		return
+	}
+
+	g.vel = g.dir.Vector()
+
+	currentSpeed := g.Speed(game)
+	if g.vel.X != 0 || g.vel.Y != 0 {
+		g.pixelsMoved += currentSpeed
+
+		clampedPixelsMoved := float32(math.Min(float64(g.pixelsMoved), float64(TileSize)))
+		visualOffsetX := float32(g.vel.X) * clampedPixelsMoved
+		visualOffsetY := float32(g.vel.Y) * clampedPixelsMoved
+
+		g.pixel.X = (float32(g.tile.X*TileSize) + visualOffsetX - TileSize/2) * Zoom
+		g.pixel.Y = (float32(g.tile.Y*TileSize) + visualOffsetY - TileSize/2) * Zoom
+	}
+}
+
+func (g *Ghost) Update2(game *Game) {
+	g.SetFrame()
+	g.Fright(game)
 	g.SetState(game)
 
 	if g.pixelsMoved >= TileSize {
@@ -241,49 +310,54 @@ func (g *Ghost) Update(game *Game) {
 		currentSpeed = BounceSpeed
 		g.vel = g.dir.Vector()
 	} else {
-		if g.state == Scatter {
+		if g.state == Scatter || g.state == Frightened { // TODO handle fright different
 			g.target = g.behavior.Scatter()
 		} else if g.state == Chase {
 			g.target = g.behavior.Chase(game)
 		}
 		g.dir = g.ChooseDirection(game.maze, g.target)
-		if g.dir != None {
-			currentSpeed = g.Speed(game)
-			g.vel = g.dir.Vector()
-		}
-	}
-
-	if g.vel.X != 0 || g.vel.Y != 0 {
-		g.pixelsMoved += currentSpeed
-
-		clampedPixelsMoved := float32(math.Min(float64(g.pixelsMoved), float64(TileSize)))
-		visualOffsetX := float32(g.vel.X) * clampedPixelsMoved
-		visualOffsetY := float32(g.vel.Y) * clampedPixelsMoved
-		//orig := 0
-
-		if g.state == InHouse || g.state == LeavingHouse {
-			//orig = TileSize / 2
-			visualOffsetX += TileSize / 2
-		}
-
-		if g.state == Scatter && g.dir == Up && g.tile.X == 14 && (g.tile.Y == 13 || g.tile.Y == 12) {
-			//orig = 123
-			visualOffsetX -= TileSize / 2
-		}
-		//if g.id == PinkyId {
-		//	fmt.Printf("%s: %s, off1=%d, %s\n", g.state, g.tile.String(), orig, g.dir)
+		//if g.dir != None {
+		currentSpeed = g.Speed(game)
+		g.vel = g.dir.Vector()
 		//}
-		g.pixel.X = (float32(g.tile.X*TileSize) + visualOffsetX - TileSize/2) * Zoom
-		g.pixel.Y = (float32(g.tile.Y*TileSize) + visualOffsetY - TileSize/2) * Zoom
 	}
+
+	g.move(currentSpeed)
 }
 
 func (g *Ghost) InHouse() bool {
 	return g.tile.Y == 14 && (g.tile.X >= 12 && g.tile.X <= 16)
 }
 
+func (g *Ghost) Fright(game *Game) {
+	if g.state != Frightened {
+		return
+	}
+
+	dt := game.frightTime - rl.GetTime()
+	if dt < 0 {
+		g.state = Scatter // temporary, set state will determine state
+		g.SetState(game)
+		return
+	}
+
+	if dt > 2.0 {
+		g.frightState = FrightBlue
+	} else {
+		n := int(dt*20) % 10
+		if n > 5 {
+			g.frightState = FrightBlue
+		} else {
+			g.frightState = FrightWhite
+		}
+	}
+}
+
 func (g *Ghost) Speed(game *Game) float32 {
 	speed := ghostSpeed(game.level)
+	if g.state == Frightened {
+		speed = frightSpeed(game.level)
+	}
 
 	// Apply tunnel speed reduction
 	if g.InTunnel() {
@@ -298,7 +372,7 @@ func (g *Ghost) InTunnel() bool {
 }
 
 func (g *Ghost) SetState(game *Game) {
-	if g.state != Scatter && g.state != Chase || game.debug {
+	if game.debug || (g.state != Scatter && g.state != Chase) {
 		return
 	}
 
@@ -365,7 +439,7 @@ func ghostSpeed(level int) float32 {
 }
 
 // GhostFrightSpeed returns ghost speed when they're frightened (blue)
-func GhostFrightSpeed(level int) float32 {
+func frightSpeed(level int) float32 {
 	// Frightened ghosts move at 50% of normal speed
 	var frightSpeedTable = []float32{
 		44.0, // Level 1: 50% of base speed
@@ -390,7 +464,7 @@ func GhostFrightSpeed(level int) float32 {
 }
 
 // CruiseElroySpeed returns Blinky's speed when he becomes "Cruise Elroy"
-func CruiseElroySpeed(level int, stage int) float32 {
+func cruiseElroySpeed(level int, stage int) float32 {
 	// Cruise Elroy has two stages of speed increase
 	// Stage 1: When dots remaining <= threshold1
 	// Stage 2: When dots remaining <= threshold2

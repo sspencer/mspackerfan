@@ -50,6 +50,9 @@ func (b Clyde) Scatter() Vec2i {
 }
 
 func (b Clyde) ExitHouse(game *Game) bool {
+	if game.debug {
+		return game.levelTime > 3.0
+	}
 	if game.dotsEaten > 60 {
 		return game.levelTime > 15
 	}

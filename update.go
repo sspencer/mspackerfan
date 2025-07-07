@@ -7,22 +7,27 @@ import (
 func (g *Game) Update() {
 	g.levelTime = float32(rl.GetTime() - g.startTime)
 	p := g.player
+	moved := false
 	if rl.IsKeyPressed(rl.KeyRight) {
+		moved = true
 		p.nextDir = Right
 		p.nextVel = Vec2i{X: 1}
 	}
 
 	if rl.IsKeyPressed(rl.KeyLeft) {
+		moved = true
 		p.nextDir = Left
 		p.nextVel = Vec2i{X: -1}
 	}
 
 	if rl.IsKeyPressed(rl.KeyUp) {
+		moved = true
 		p.nextDir = Up
 		p.nextVel = Vec2i{Y: -1}
 	}
 
 	if rl.IsKeyPressed(rl.KeyDown) {
+		moved = true
 		p.nextDir = Down
 		p.nextVel = Vec2i{Y: 1}
 	}
@@ -41,8 +46,11 @@ func (g *Game) Update() {
 	}
 
 	if rl.IsKeyPressed(rl.KeyP) || rl.IsKeyPressed(rl.KeySpace) {
+		moved = true
 		g.paused = !g.paused
 	}
+
+	g.moved = moved
 
 	if g.debug {
 		if rl.IsKeyPressed(rl.KeyC) {
@@ -55,6 +63,7 @@ func (g *Game) Update() {
 
 		if rl.IsKeyPressed(rl.KeyF) {
 			g.setGhostMode(Frightened)
+			g.frightTime = rl.GetTime() + FrightDuration
 		}
 	}
 

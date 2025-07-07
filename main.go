@@ -1,19 +1,21 @@
 package main
 
 import (
+	"flag"
 	"strings"
 
 	rl "github.com/gen2brain/raylib-go/raylib"
 )
 
 const (
-	ScreenHeight = 36
-	TopPadding   = 3 // make room for score
-	GameWidth    = 28
-	GameHeight   = 31
-	Zoom         = 4
-	TileSize     = 8
-	ChaseBug     = true // error in chase state in original game
+	ScreenHeight   = 36
+	TopPadding     = 3 // make room for score
+	GameWidth      = 28
+	GameHeight     = 31
+	Zoom           = 4
+	TileSize       = 8
+	ChaseBug       = true // error in chase state in original game
+	FrightDuration = 6.0
 )
 
 type Game struct {
@@ -29,14 +31,20 @@ type Game struct {
 	camera2     rl.Camera2D
 	paused      bool
 	debug       bool
+	moved       bool
 	debugLayout bool
 	highScore   int
 	startTime   float64
-	levelTime   float32
+	levelTime   float32 // TODO change to float64
+	frightTime  float64
 	dotsEaten   int
 }
 
 func main() {
+	debugMode := false
+	flag.BoolVar(&debugMode, "d", false, "enable debug mode")
+	flag.Parse()
+
 	rl.SetTraceLogLevel(rl.LogWarning)
 
 	rl.InitWindow(GameWidth*TileSize*Zoom, ScreenHeight*TileSize*Zoom, "Ms. Packer Fan")
@@ -51,7 +59,7 @@ func main() {
 	image := rl.LoadImageFromTexture(texture)
 	defer rl.UnloadImage(image)
 
-	g := initGame(font, texture, image)
+	g := initGame(font, texture, image, debugMode)
 
 	for !rl.WindowShouldClose() {
 		g.Update()
@@ -65,7 +73,7 @@ func main() {
 }
 
 // newGame := func() *Game {}
-func initGame(font, texture rl.Texture2D, image *rl.Image) *Game {
+func initGame(font, texture rl.Texture2D, image *rl.Image, debugMode bool) *Game {
 	g := &Game{}
 	g.font = font
 	g.texture = texture
@@ -75,6 +83,7 @@ func initGame(font, texture rl.Texture2D, image *rl.Image) *Game {
 	g.highScore = 0
 	g.startTime = rl.GetTime()
 	g.level = 1
+	g.debug = debugMode
 	for i := 0; i < GameHeight; i++ {
 		g.maze[i] = make([]Tile, GameWidth)
 	}
