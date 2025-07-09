@@ -39,20 +39,20 @@ func (g *Game) drawLayout() {
 	g.drawText("0", 24, y, pixelOffset, rl.White)                              // player 2 score
 
 	pixelOffset = 8
-	bottom := int32(ScreenHeight * TileSize * Zoom)
+	bottom := int32(ScreenHeight * Pixel)
 	msg := fmt.Sprintf("state: %s, dots: %d, time: %0.1f", g.ghosts[0].state, g.dotsEaten, g.levelTime)
 	rl.DrawText(msg, 5, bottom-50, 24, rl.Green)
-
+	rl.DrawFPS(10, 10)
 	//g.drawText(fmt.Sprintf("dots %d", g.dotsEaten), 19, 34, pixelOffset, rl.White) // player 2 score
 
 }
 
 func (g *Game) drawBoard() {
 
-	x := float32(GameWidth*TileSize) + TileSize/2
-	y := float32(g.boardNum * GameHeight * TileSize)
-	w := float32(GameWidth * TileSize)  // 28 * 8
-	h := float32(GameHeight * TileSize) // 31 * 8
+	x := float32(GameWidth*Size) + Size/2
+	y := float32(g.boardNum * GameHeight * Size)
+	w := float32(GameWidth * Size)  // 28 * 8
+	h := float32(GameHeight * Size) // 31 * 8
 	src := rl.NewRectangle(x, y, w, h)
 	dst := rl.NewRectangle(0, 0, w*Zoom, h*Zoom)
 
@@ -80,17 +80,24 @@ func (g *Game) drawBoard() {
 		powerX, powerY = 1, 158
 	}
 
-	dot := rl.NewRectangle(dotX*TileSize, dotY*TileSize, TileSize, TileSize)
-	power := rl.NewRectangle(powerX*TileSize, powerY*TileSize, TileSize, TileSize)
+	dot := rl.NewRectangle(dotX*Size, dotY*Size, Size, Size)
+	power := rl.NewRectangle(powerX*Size, powerY*Size, Size, Size)
 
 	for y := 0; y < GameHeight; y++ {
 		for x := 0; x < GameWidth; x++ {
-			if g.maze[y][x] == Dot {
-				dst = rl.NewRectangle(float32(x*TileSize*Zoom), float32(y*TileSize*Zoom), TileSize*Zoom, TileSize*Zoom)
-				rl.DrawTexturePro(g.texture, dot, dst, rl.Vector2{}, 0, rl.White)
-			} else if g.maze[y][x] == Power {
-				dst = rl.NewRectangle(float32(x*TileSize*Zoom), float32(y*TileSize*Zoom), TileSize*Zoom, TileSize*Zoom)
-				rl.DrawTexturePro(g.texture, power, dst, rl.Vector2{}, 0, rl.White)
+			tile := g.maze[y][x]
+			if tile == Wall {
+				continue
+			}
+
+			rec := rl.NewRectangle(float32(x*Pixel), float32(y*Pixel), Pixel, Pixel)
+
+			if tile == Dot {
+				rl.DrawTexturePro(g.texture, dot, rec, rl.Vector2{}, 0, rl.White)
+			} else if tile == Power {
+				rl.DrawTexturePro(g.texture, power, rec, rl.Vector2{}, 0, rl.White)
+			} else if tile == Tunnel {
+				rl.DrawRectangleRec(rec, rl.Gray)
 			}
 		}
 	}
@@ -109,6 +116,7 @@ func (g *Game) drawGhosts() {
 		} else {
 			loc = e.sprite[e.dir]
 		}
+
 		sx := float32(loc.X) + float32(e.frame)*e.width
 		sy := float32(loc.Y)
 		src := rl.NewRectangle(sx, sy, e.width, e.height) // sprite
@@ -117,12 +125,13 @@ func (g *Game) drawGhosts() {
 		rl.DrawTexturePro(g.texture, src, dst, rl.Vector2{}, 0, rl.White)
 
 		if g.debug && e.tile.X != 0 && e.tile.Y != 0 {
-			// f := TileSize * Zoom / 2
+			f := float32(Pixel)
+			f2 := f / 2
 			target := e.target.Clamp()
-			rl.DrawCircle(int32(target.X*TileSize*Zoom), int32(target.Y*TileSize*Zoom), TileSize*Zoom, rl.ColorAlpha(e.color, 0.5))
-			v1 := rl.Vector2{X: float32(target.X * TileSize * Zoom), Y: float32(target.Y * TileSize * Zoom)}
-			v2 := rl.Vector2{X: float32(e.tile.X * TileSize * Zoom), Y: float32(e.tile.Y * TileSize * Zoom)}
-			rl.DrawLineEx(v1, v2, 4, e.color)
+			rl.DrawCircle(int32(target.X*Pixel)+int32(f2), int32(target.Y*Pixel)+int32(f2), Pixel, rl.ColorAlpha(e.color, 0.5))
+			v1 := rl.Vector2{X: float32(target.X*Pixel) + f2, Y: float32(target.Y*Pixel) + f2}
+			v2 := rl.Vector2{X: e.pixel.X + f, Y: e.pixel.Y + f}
+			rl.DrawLineEx(v1, v2, 4, rl.ColorAlpha(e.color, 0.5))
 		}
 	}
 }
@@ -152,7 +161,7 @@ func (g *Game) drawCheckerBoard() {
 
 			}
 
-			rec := rl.NewRectangle(float32(x*TileSize*Zoom), float32(y*TileSize*Zoom), TileSize*Zoom, TileSize*Zoom)
+			rec := rl.NewRectangle(float32(x*Pixel), float32(y*Pixel), Pixel, Pixel)
 			if i%2 == 1 {
 				rl.DrawRectangleRec(rec, c1)
 			} else {

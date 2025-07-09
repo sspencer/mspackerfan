@@ -31,6 +31,8 @@ type Entity struct {
 	height      float32
 	frameCount  int
 	frame       int
+	frameTime   float32
+	pauseTime   float32
 }
 
 func (d Direction) String() string {
@@ -59,7 +61,7 @@ func (d Direction) Opposite() Direction {
 	case Left:
 		return Right
 	default:
-		panic("unhandled default case")
+		return None // panic("unhandled default case")
 	}
 }
 
@@ -80,8 +82,8 @@ func (d Direction) Vector() Vec2i {
 
 func (d Direction) GetNextTile(vec Vec2i) Vec2i {
 	return Vec2i{
-		X: vec.X + int(d.Vector().X),
-		Y: vec.Y + int(d.Vector().Y),
+		X: d.Vector().X + vec.X,
+		Y: d.Vector().Y + vec.Y,
 	}
 }
 
@@ -112,6 +114,10 @@ func (v Vec2i) IsZero() bool {
 	return v.X == 0 && v.Y == 0
 }
 
+func (v Vec2i) IsNonZero() bool {
+	return v.X != 0 || v.Y != 0
+}
+
 func (v Vec2i) InMaze() bool {
 	return v.X >= 0 && v.X < GameWidth && v.Y >= 0 && v.Y < GameHeight
 }
@@ -133,14 +139,20 @@ func (v Vec2i) Clamp() Vec2i {
 }
 
 func (e *Entity) move(speed float32) {
+	v := speed * 60.0
+	dt := rl.GetFrameTime()
+	d := v * dt
+	speed = d
+
 	if e.vel.X != 0 || e.vel.Y != 0 {
 		e.pixelsMoved += speed
 
-		clampedPixelsMoved := float32(math.Min(float64(e.pixelsMoved), float64(TileSize)))
+		clampedPixelsMoved := float32(math.Min(float64(e.pixelsMoved), float64(Size)))
 		visualOffsetX := float32(e.vel.X) * clampedPixelsMoved
 		visualOffsetY := float32(e.vel.Y) * clampedPixelsMoved
 
-		e.pixel.X = (float32(e.tile.X*TileSize) + visualOffsetX - TileSize/2) * Zoom
-		e.pixel.Y = (float32(e.tile.Y*TileSize) + visualOffsetY - TileSize/2) * Zoom
+		//. tile size or zoom
+		e.pixel.X = (float32(e.tile.X*Size) + visualOffsetX - Size/2) * Zoom
+		e.pixel.Y = (float32(e.tile.Y*Size) + visualOffsetY - Size/2) * Zoom
 	}
 }

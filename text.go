@@ -48,8 +48,8 @@ func (g *Game) drawText(text string, x, y, pixelOffset int, color rl.Color) {
 
 		// ! = 33
 
-		src := rl.NewRectangle(float32(fx*TileSize), float32(fy*TileSize), TileSize, TileSize)
-		dst := rl.NewRectangle(float32((x+i)*TileSize*Zoom), float32(y*TileSize)*Zoom+float32(pixelOffset), TileSize*Zoom, TileSize*Zoom)
+		src := rl.NewRectangle(float32(fx*Size), float32(fy*Size), Size, Size)
+		dst := rl.NewRectangle(float32((x+i)*Pixel), float32(y*Pixel)+float32(pixelOffset), Pixel, Pixel)
 		rl.DrawTexturePro(g.font, src, dst, rl.Vector2{}, 0, color)
 
 	}

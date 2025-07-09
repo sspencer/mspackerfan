@@ -7,6 +7,7 @@
 *.dll
 *.so
 *.dylib
+*.bak
 
 # don't include artwork
 *.png 

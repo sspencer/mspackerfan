@@ -2,7 +2,8 @@ package main
 
 import (
 	"flag"
-	"strings"
+	"fmt"
+	"runtime/debug"
 
 	rl "github.com/gen2brain/raylib-go/raylib"
 )
@@ -13,21 +14,24 @@ const (
 	GameWidth      = 28
 	GameHeight     = 31
 	Zoom           = 4
-	TileSize       = 8
+	Size           = 8
+	Pixel          = Size * Zoom
 	ChaseBug       = true // error in chase state in original game
 	FrightDuration = 6.0
 )
 
 type Game struct {
-	font        rl.Texture2D
-	texture     rl.Texture2D
-	image       *rl.Image
-	player      *Packer
-	ghosts      []*Ghost
-	shader      rl.Shader
-	boardNum    int
-	level       int
-	maze        Maze
+	font     rl.Texture2D
+	texture  rl.Texture2D
+	image    *rl.Image
+	player   *Player
+	ghosts   []*Ghost
+	shader   rl.Shader
+	boardNum int
+	level    int
+	maze     Maze
+	//maze        [31][28]Tile
+	tunnels     []Vec2i
 	camera2     rl.Camera2D
 	paused      bool
 	debug       bool
@@ -35,7 +39,7 @@ type Game struct {
 	debugLayout bool
 	highScore   int
 	startTime   float64
-	levelTime   float32 // TODO change to float64
+	levelTime   float64
 	frightTime  float64
 	dotsEaten   int
 }
@@ -45,12 +49,16 @@ func main() {
 	flag.BoolVar(&debugMode, "d", false, "enable debug mode")
 	flag.Parse()
 
+	// less GC
+	debug.SetGCPercent(200)
+
 	rl.SetTraceLogLevel(rl.LogWarning)
 
-	rl.InitWindow(GameWidth*TileSize*Zoom, ScreenHeight*TileSize*Zoom, "Ms. Packer Fan")
+	rl.SetConfigFlags(rl.FlagVsyncHint)
+	rl.InitWindow(GameWidth*Pixel, ScreenHeight*Pixel, "Ms. Player Fan")
 	defer rl.CloseWindow()
 
-	rl.SetTargetFPS(60)
+	//rl.SetTargetFPS(60)
 
 	font := rl.LoadTexture("font.png")
 	defer rl.UnloadTexture(font)
@@ -89,13 +97,16 @@ func initGame(font, texture rl.Texture2D, image *rl.Image, debugMode bool) *Game
 	}
 
 	g.camera2 = rl.Camera2D{
-		Offset:   rl.Vector2{Y: TopPadding * TileSize * Zoom},
+		Offset:   rl.Vector2{Y: TopPadding * Pixel},
 		Target:   rl.Vector2{},
 		Rotation: 0,
 		Zoom:     1,
 	}
 
 	g.mapBoard()
+	for i, t := range g.tunnels {
+		fmt.Printf("Tunnel %d: %v\n", i, t)
+	}
 
 	//dots := 0
 	//for y := 0; y < GameHeight; y++ {
@@ -109,77 +120,17 @@ func initGame(font, texture rl.Texture2D, image *rl.Image, debugMode bool) *Game
 
 	// g.maze.String()
 
-	g.player = NewPacker()
+	g.player = NewPlayer()
+	//if g.debug {
+	//	g.ghosts = make([]*Ghost, 1)
+	//	g.ghosts[0] = NewGhost(g, Blinky{})
+	//
+	//} else {
 	g.ghosts = make([]*Ghost, 4)
-	g.ghosts[0] = NewGhost(Blinky{}) // do not reorder ghosts
-	g.ghosts[1] = NewGhost(Pinky{})
-	g.ghosts[2] = NewGhost(Inky{})
-	g.ghosts[3] = NewGhost(Clyde{})
-
+	g.ghosts[0] = NewGhost(g, Blinky{})
+	g.ghosts[1] = NewGhost(g, Pinky{})
+	g.ghosts[2] = NewGhost(g, Inky{})
+	g.ghosts[3] = NewGhost(g, Clyde{})
+	//}
 	return g
-}
-
-// always get starting "dot" color at boardNum pos 1,1
-// then go row by row to get either dot (.), power (o), border (pixelX) or empty (<sp>)
-
-func (g *Game) readPixelArea(startX, startY, width, height int32) (uint64, string) {
-
-	var result uint64
-	tile := strings.Builder{}
-
-	// Read each pixel in the specified area
-	for y := startY; y < startY+height; y++ {
-		for x := startX; x < startX+width; x++ {
-			// Get the color of the pixel at position (pixelX, pixelY)
-			result <<= 1
-
-			color := rl.GetImageColor(*g.image, x, y)
-			if color.R > 0 || color.G > 0 || color.B > 0 {
-				result |= 1
-				tile.WriteString("1")
-			} else {
-				tile.WriteString("0")
-			}
-		}
-		tile.WriteString("\n")
-	}
-
-	return result, tile.String()
-}
-
-func (g *Game) mapBoard() {
-
-	offset := g.boardNum * GameHeight * TileSize
-	var piece Tile
-	for y := 0; y < GameHeight; y++ {
-		for x := 0; x < GameWidth; x++ {
-			p, _ := g.readPixelArea(int32(x*TileSize), int32(y*TileSize+offset), TileSize, TileSize)
-			if p == 0 {
-				piece = Empty
-			} else if p == DotMask { // dot
-				piece = Dot
-			} else if p == PowerMask {
-				piece = Power
-			} else {
-				piece = Wall
-			}
-
-			g.maze[y][x] = piece
-		}
-	}
-
-	// find tunnels
-	for y := 0; y < GameHeight; y++ {
-		if g.maze[y][0] == Empty &&
-			(g.maze[y][1] == Empty || g.maze[y][1] == Dot) &&
-			(g.maze[y][2] == Empty || g.maze[y][2] == Dot) {
-			g.maze[y][0] = Tunnel
-		}
-
-		if (g.maze[y][GameWidth-3] == Empty || g.maze[y][GameWidth-3] == Dot) &&
-			(g.maze[y][GameWidth-2] == Empty || g.maze[y][GameWidth-2] == Dot) &&
-			g.maze[y][GameWidth-1] == Empty {
-			g.maze[y][GameWidth-1] = Tunnel
-		}
-	}
 }

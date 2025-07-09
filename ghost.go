@@ -44,24 +44,25 @@ const (
 type Behavior interface {
 	Id() GhostId
 	Color() rl.Color
-	StartingTile() Vec2i
-	StartingDir() Direction
 	Sprite() Vec2i
+	StartingTile(game *Game) Vec2i
+	StartingDir(game *Game) Direction
 	Chase(game *Game) Vec2i
-	Scatter() Vec2i
+	Scatter(game *Game) Vec2i
 	ExitHouse(game *Game) bool
 }
 
 type Ghost struct {
 	Entity
-	id          GhostId
-	state       GhostState
-	frightState FrightState
-	behavior    Behavior
-	fright      map[FrightState]Vec2i
-	color       rl.Color
-	target      Vec2i // temporary for training
-	bounce      int
+	id               GhostId
+	state            GhostState
+	frightState      FrightState
+	behavior         Behavior
+	fright           map[FrightState]Vec2i
+	color            rl.Color
+	target           Vec2i // temporary for training
+	bounce           int
+	pixelsMovedInDir float32
 }
 
 // Blinky is the red behavior
@@ -114,11 +115,11 @@ func (g GhostState) String() string {
 	}
 }
 
-func NewGhost(b Behavior) *Ghost {
+func NewGhost(game *Game, b Behavior) *Ghost {
 	spriteY := b.Sprite().Y
-	startX := b.StartingTile().X
-	startY := b.StartingTile().Y
-	dir := b.StartingDir()
+	startX := b.StartingTile(game).X
+	startY := b.StartingTile(game).Y
+	dir := b.StartingDir(game)
 
 	g := Ghost{
 		Entity: Entity{
@@ -130,7 +131,7 @@ func NewGhost(b Behavior) *Ghost {
 				Left:  {488, spriteY},
 			},
 			tile:    Vec2i{X: startX, Y: startY},
-			pixel:   rl.Vector2{X: float32(startX * TileSize * Zoom), Y: float32(startY * TileSize * Zoom)},
+			pixel:   rl.Vector2{X: float32(startX * Pixel), Y: float32(startY * Pixel)},
 			width:   16,
 			height:  16,
 			dir:     dir,
@@ -144,7 +145,6 @@ func NewGhost(b Behavior) *Ghost {
 		color:    b.Color(),
 		behavior: b,
 		bounce:   1,
-		state:    Scatter,
 		fright: map[FrightState]Vec2i{
 			FrightBlue:      {584, 64}, // 2 frames
 			FrightWhite:     {616, 64}, // 2 frames
@@ -157,12 +157,14 @@ func NewGhost(b Behavior) *Ghost {
 
 	if g.InHouse() {
 		g.state = InHouse
+	} else {
+		g.state = Scatter
 	}
-
+	fmt.Printf("ghost %s starting at %d,%d in state %s\n", g.id, g.tile.X, g.tile.Y, g.state)
 	return &g
 }
 
-func (g *Ghost) ChooseDirection(maze Maze, target Vec2i) Direction {
+func (g *Ghost) ChooseDirection(game *Game, target Vec2i) Direction {
 
 	var validDirections []Direction
 	//if g.dir == None {
@@ -173,13 +175,19 @@ func (g *Ghost) ChooseDirection(maze Maze, target Vec2i) Direction {
 			continue
 		}
 		nextTile := dir.GetNextTile(g.tile)
-		if maze.IsValidMove(nextTile) {
+		if game.maze.IsValidMove(nextTile) {
 			validDirections = append(validDirections, dir)
 		}
 	}
 
 	if len(validDirections) == 0 {
+		fmt.Printf("**** no valid directions for %s at %v\n", g.id, target)
 		return None
+	}
+
+	// commit to a (previous) decision for at least one tile
+	if g.pixelsMovedInDir < Size {
+		return g.dir
 	}
 
 	if g.state == Frightened {
@@ -196,10 +204,61 @@ func (g *Ghost) ChooseDirection(maze Maze, target Vec2i) Direction {
 			bestDir = dir
 		}
 	}
+
+	//fmt.Printf("%s cur: %s: best %s at pos: %s, pixels: %0.2f / %0.2f\n", g.id, g.dir, bestDir, g.tile, g.pixelsMoved, g.pixelsMovedInDir)
 	return bestDir
 }
 
-func (g *Ghost) SetFrame() {
+func (g *Ghost) Update(game *Game) {
+	g.updateFrameTime()
+	g.updateFright(game)
+	g.updateState(game)
+	if g.pixelsMoved >= Size {
+		// Update tile position based on the last move
+		g.tile = g.tile.Add(g.vel.X, g.vel.Y)
+		// --- Tunnel Teleportation ---
+		// if tunnel something
+
+		g.pixelsMoved = 0
+	}
+
+	if g.state == Scatter {
+		g.target = g.behavior.Scatter(game)
+	} else if g.state == Chase {
+		g.target = g.behavior.Chase(game) // ghost 0 is Blinky
+	}
+
+	curDir := g.dir
+	if game.InTunnel(&g.Entity) {
+		if g.tile.X < 0 {
+			g.tile.X = GameWidth - 1
+		} else if g.tile.X >= GameWidth-1 {
+			g.tile.X = 0
+		}
+	} else {
+		g.dir = g.ChooseDirection(game, g.target)
+		if g.dir == None {
+			fmt.Println("no direction")
+			return
+		}
+	}
+
+	g.vel = g.dir.Vector()
+
+	if g.vel.IsNonZero() {
+
+		currentSpeed := g.Speed(game)
+		if curDir == g.dir {
+			g.pixelsMovedInDir += currentSpeed
+		} else {
+			g.pixelsMovedInDir = currentSpeed
+		}
+
+		g.move(currentSpeed)
+	}
+}
+
+func (g *Ghost) updateFrame() {
 	if g.state == InHouse {
 		g.frame = 0
 		return
@@ -222,134 +281,118 @@ func (g *Ghost) SetFrame() {
 	}
 }
 
-func (g *Ghost) Update(game *Game) {
-	g.SetFrame()
-	g.Fright(game)
-	g.SetState(game)
-	if g.pixelsMoved >= TileSize {
-		// Update tile position based on the last move
-		g.tile = g.tile.Add(g.vel.X, g.vel.Y)
-		// --- Tunnel Teleportation ---
-		// if tunnel something
-
-		g.pixelsMoved = 0
-	}
-
-	if g.InHouse() {
-		return
-	} else if g.state == Scatter {
-		g.target = g.behavior.Scatter()
-	} else if g.state == Chase {
-		g.target = g.behavior.Chase(game) // ghost 0 is Blinky
-	}
-
-	g.dir = g.ChooseDirection(game.maze, g.target)
-	if g.dir == None {
-		fmt.Println("no direction")
-		return
-	}
-
-	g.vel = g.dir.Vector()
-
-	currentSpeed := g.Speed(game)
-	if g.vel.X != 0 || g.vel.Y != 0 {
-		g.pixelsMoved += currentSpeed
-
-		clampedPixelsMoved := float32(math.Min(float64(g.pixelsMoved), float64(TileSize)))
-		visualOffsetX := float32(g.vel.X) * clampedPixelsMoved
-		visualOffsetY := float32(g.vel.Y) * clampedPixelsMoved
-
-		g.pixel.X = (float32(g.tile.X*TileSize) + visualOffsetX - TileSize/2) * Zoom
-		g.pixel.Y = (float32(g.tile.Y*TileSize) + visualOffsetY - TileSize/2) * Zoom
-	}
-}
-
-func (g *Ghost) Update2(game *Game) {
-	g.SetFrame()
-	g.Fright(game)
-	g.SetState(game)
-
-	if g.pixelsMoved >= TileSize {
-		// Update tile position based on the last move
-		// --- Tunnel Teleportation ---
-		// if tunnel something
-
-		g.tile = g.tile.Add(g.vel.X, g.vel.Y)
-		g.pixelsMoved = 0
-	}
-
-	var currentSpeed float32 = 0.0
+func (g *Ghost) updateFrameTime() {
 	if g.state == InHouse {
-		if g.pixelsMoved >= TileSize/2 {
-			g.bounce *= -1
-			g.dir = g.dir.Opposite()
-		} else if g.pixelsMoved <= -TileSize/2 {
-			g.bounce *= -1
-			g.dir = g.dir.Opposite()
-		}
-
-		currentSpeed = float32(g.bounce) * BounceSpeed
-		if g.behavior.ExitHouse(game) {
-			g.state = LeavingHouse
-		}
-	} else if g.state == LeavingHouse {
-		if g.tile.Y == 14 {
-			if g.tile.X == 14 {
-				g.dir = Up
-			} else if g.tile.X < 14 {
-				g.dir = Right
-			} else {
-				g.dir = Left
-			}
-		} else {
-			g.state = Scatter
-			g.dir = Up
-			g.tile = Vec2i{X: 14, Y: 12}
-			g.pixelsMoved = TileSize
-		}
-		currentSpeed = BounceSpeed
-		g.vel = g.dir.Vector()
-	} else {
-		if g.state == Scatter || g.state == Frightened { // TODO handle fright different
-			g.target = g.behavior.Scatter()
-		} else if g.state == Chase {
-			g.target = g.behavior.Chase(game)
-		}
-		g.dir = g.ChooseDirection(game.maze, g.target)
-		//if g.dir != None {
-		currentSpeed = g.Speed(game)
-		g.vel = g.dir.Vector()
-		//}
+		g.frame = 0
+		return
+	} else if g.state == Frightened && g.frightState != FrightBlue && g.frightState != FrightWhite {
+		g.frame = 0
+		return
 	}
 
-	g.move(currentSpeed)
+	const timePerState = 15.0 / 60.0   // 0.25 seconds per state (15 frames at 60 FPS)
+	const cycleTime = 2 * timePerState // 0.5 seconds for full cycle
+
+	// Accumulate time
+	g.frameTime += rl.GetFrameTime()
+
+	// Loop the animation
+	if g.frameTime >= cycleTime {
+		g.frameTime -= cycleTime
+	}
+
+	// Determine current frame based on time
+	timeInCycle := g.frameTime
+	if timeInCycle < timePerState {
+		g.frame = 0 // First pose
+	} else {
+		g.frame = 1 // Second pose
+	}
 }
 
-func (g *Ghost) InHouse() bool {
-	return g.tile.Y == 14 && (g.tile.X >= 12 && g.tile.X <= 16)
-}
+/*
+	func (g *Ghost) Update2(game *Game) {
+		g.updateFrame()
+		g.updateFright(game)
+		g.updateState(game)
 
-func (g *Ghost) Fright(game *Game) {
+		if g.pixelsMoved >= Size {
+			// Update tile position based on the last move
+			// --- Tunnel Teleportation ---
+			// if tunnel something
+
+			g.tile = g.tile.Add(g.vel.X, g.vel.Y)
+			g.pixelsMoved = 0
+		}
+
+		var currentSpeed float32 = 0.0
+		if g.state == InHouse {
+			if g.pixelsMoved >= Size/2 {
+				g.bounce *= -1
+				g.dir = g.dir.Opposite()
+			} else if g.pixelsMoved <= -Size/2 {
+				g.bounce *= -1
+				g.dir = g.dir.Opposite()
+			}
+
+			currentSpeed = float32(g.bounce) * BounceSpeed
+			if g.behavior.ExitHouse(game) {
+				g.state = LeavingHouse
+			}
+		} else if g.state == LeavingHouse {
+			if g.tile.Y == 14 {
+				if g.tile.X == 14 {
+					g.dir = Up
+				} else if g.tile.X < 14 {
+					g.dir = Right
+				} else {
+					g.dir = Left
+				}
+			} else {
+				g.state = Scatter
+				g.dir = Up
+				g.tile = Vec2i{X: 14, Y: 12}
+				g.pixelsMoved = Size
+			}
+			currentSpeed = BounceSpeed
+			g.vel = g.dir.Vector()
+		} else {
+			if g.state == Scatter || g.state == Frightened { // TODO handle fright different
+				g.target = g.behavior.Scatter(game)
+			} else if g.state == Chase {
+				g.target = g.behavior.Chase(game)
+			}
+			g.dir = g.ChooseDirection(game.maze, g.target)
+			//if g.dir != None {
+			currentSpeed = g.Speed(game)
+			g.vel = g.dir.Vector()
+			//}
+		}
+
+		g.move(currentSpeed)
+	}
+*/
+func (g *Ghost) updateFright(game *Game) {
 	if g.state != Frightened {
 		return
 	}
-
 	dt := game.frightTime - rl.GetTime()
 	if dt < 0 {
 		g.state = Scatter // temporary, set state will determine state
-		g.SetState(game)
+		g.updateState(game)
 		return
 	}
 
 	if dt > 2.0 {
 		g.frightState = FrightBlue
+		return
+	}
+
+	n := int(math.Round(dt*200)) % 100
+	if n > 49 {
+		g.frightState = FrightBlue
 	} else {
-		n := int(dt*20) % 10
-		if n > 5 {
-			g.frightState = FrightBlue
-		} else {
-			g.frightState = FrightWhite
-		}
+		g.frightState = FrightWhite
 	}
 }
 
@@ -360,18 +403,14 @@ func (g *Ghost) Speed(game *Game) float32 {
 	}
 
 	// Apply tunnel speed reduction
-	if g.InTunnel() {
+	if game.InTunnel(&g.Entity) {
 		speed *= TunnelSpeedFactor
 	}
 
 	return speed
 }
 
-func (g *Ghost) InTunnel() bool {
-	return false
-}
-
-func (g *Ghost) SetState(game *Game) {
+func (g *Ghost) updateState(game *Game) {
 	if game.debug || (g.state != Scatter && g.state != Chase) {
 		return
 	}
@@ -411,6 +450,10 @@ func (g *Ghost) SetState(game *Game) {
 		fmt.Printf("from %s to %s at %0.4f\n", g.state, state, game.levelTime)
 	}
 	g.state = state
+}
+
+func (g *Ghost) InHouse() bool {
+	return g.tile.Y == 14 && (g.tile.X >= 12 && g.tile.X <= 16)
 }
 
 // GhostSpeed returns ghost speed in pixels per frame based on level

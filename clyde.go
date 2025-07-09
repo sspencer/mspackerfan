@@ -4,7 +4,7 @@ import rl "github.com/gen2brain/raylib-go/raylib"
 
 // Clyde (Orange)
 //    Chase:
-//       If Clyde is more than eight tiles away from Packer, he targets
+//       If Clyde is more than eight tiles away from Player, he targets
 //       her directly (like Blinky). If he is closer than eight tiles, he
 //       retreats to his Scatter target (bottom-left corner).
 //    Scatter:
@@ -18,12 +18,18 @@ func (b Clyde) Color() rl.Color {
 	return rl.Orange
 }
 
-func (b Clyde) StartingTile() Vec2i {
-	return Vec2i{X: 16, Y: 14}
+func (b Clyde) StartingTile(game *Game) Vec2i {
+	//if game.debug {
+	return Vec2i{X: 16, Y: 11}
+	//}
+	//return Vec2i{X: 16, Y: 14}
 }
 
-func (b Clyde) StartingDir() Direction {
-	return Down
+func (b Clyde) StartingDir(game *Game) Direction {
+	//if game.debug {
+	return Right
+	//}
+	//return Down
 }
 
 func (b Clyde) Sprite() Vec2i {
@@ -42,10 +48,10 @@ func (b Clyde) Chase(game *Game) Vec2i {
 		}
 	}
 
-	return b.Scatter()
+	return b.Scatter(game)
 }
 
-func (b Clyde) Scatter() Vec2i {
+func (b Clyde) Scatter(game *Game) Vec2i {
 	return Vec2i{X: 26, Y: 29} // depends on board
 }
 

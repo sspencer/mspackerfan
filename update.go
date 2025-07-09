@@ -5,7 +5,7 @@ import (
 )
 
 func (g *Game) Update() {
-	g.levelTime = float32(rl.GetTime() - g.startTime)
+	g.levelTime = rl.GetTime() - g.startTime
 	p := g.player
 	moved := false
 	if rl.IsKeyPressed(rl.KeyRight) {
@@ -80,5 +80,8 @@ func (g *Game) Update() {
 func (g *Game) setGhostMode(mode GhostState) {
 	for _, ghost := range g.ghosts {
 		ghost.state = mode
+		if mode == Frightened {
+			g.frightTime = rl.GetTime() + FrightDuration
+		}
 	}
 }

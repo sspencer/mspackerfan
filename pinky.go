@@ -4,8 +4,8 @@ import rl "github.com/gen2brain/raylib-go/raylib"
 
 // Pinky (Pink)
 //    Chase:
-//       Targets a tile four tiles ahead of Packer’s current position
-//       in her direction of movement. If Packer is moving up,
+//       Targets a tile four tiles ahead of Player’s current position
+//       in her direction of movement. If Player is moving up,
 //       Pinky’s target is four tiles above her (with an overflow bug in the
 //       original game for upward movement).
 //    Scatter:
@@ -19,12 +19,18 @@ func (b Pinky) Color() rl.Color {
 	return rl.Pink
 }
 
-func (b Pinky) StartingTile() Vec2i {
-	return Vec2i{X: 14, Y: 14}
+func (b Pinky) StartingTile(game *Game) Vec2i {
+	//if game.debug {
+	return Vec2i{X: 14, Y: 11}
+	//}
+	//return Vec2i{X: 14, Y: 14}
 }
 
-func (b Pinky) StartingDir() Direction {
-	return Up
+func (b Pinky) StartingDir(game *Game) Direction {
+	//if game.debug {
+	return Left
+	//}
+	//return Up
 }
 
 func (b Pinky) Sprite() Vec2i {
@@ -52,7 +58,7 @@ func (b Pinky) Chase(game *Game) Vec2i {
 	}
 }
 
-func (b Pinky) Scatter() Vec2i {
+func (b Pinky) Scatter(game *Game) Vec2i {
 	return Vec2i{X: 1, Y: 1} // depends on board
 }
 

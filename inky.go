@@ -7,7 +7,7 @@ import (
 // Inky (Blue)
 //    Chase:
 //       Uses a complex strategy. Inky calculates a target by:
-//       1. Taking a point two tiles ahead of Packer in her direction.
+//       1. Taking a point two tiles ahead of Player in her direction.
 //       2. Drawing a line from Blinky’s current position to that point.
 //       3. Doubling the distance from Blinky to that point to select a target tile.
 //          This makes Inky’s behavior dependent on Blinky’s position, often resulting
@@ -23,12 +23,18 @@ func (b Inky) Color() rl.Color {
 	return rl.SkyBlue
 }
 
-func (b Inky) StartingTile() Vec2i {
-	return Vec2i{X: 12, Y: 14}
+func (b Inky) StartingTile(game *Game) Vec2i {
+	//if game.debug {
+	return Vec2i{X: 12, Y: 11}
+	//}
+	//return Vec2i{X: 12, Y: 14}
 }
 
-func (b Inky) StartingDir() Direction {
-	return Down
+func (b Inky) StartingDir(game *Game) Direction {
+	//if game.debug {
+	return Left
+	//}
+	//return Down
 }
 
 func (b Inky) Sprite() Vec2i {
@@ -62,7 +68,7 @@ func (b Inky) Chase(game *Game) Vec2i {
 	return Vec2i{X: g.tile.X + 2*dx, Y: g.tile.Y + 2*dy}
 }
 
-func (b Inky) Scatter() Vec2i {
+func (b Inky) Scatter(game *Game) Vec2i {
 	return Vec2i{X: 1, Y: 29} // depends on board
 }
 
