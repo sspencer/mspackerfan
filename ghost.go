@@ -210,7 +210,7 @@ func (g *Ghost) ChooseDirection(game *Game, target Vec2i) Direction {
 }
 
 func (g *Ghost) Update(game *Game) {
-	g.updateFrameTime()
+	g.updateFrame()
 	g.updateFright(game)
 	g.updateState(game)
 	if g.pixelsMoved >= Size {
@@ -281,97 +281,6 @@ func (g *Ghost) updateFrame() {
 	}
 }
 
-func (g *Ghost) updateFrameTime() {
-	if g.state == InHouse {
-		g.frame = 0
-		return
-	} else if g.state == Frightened && g.frightState != FrightBlue && g.frightState != FrightWhite {
-		g.frame = 0
-		return
-	}
-
-	const timePerState = 15.0 / 60.0   // 0.25 seconds per state (15 frames at 60 FPS)
-	const cycleTime = 2 * timePerState // 0.5 seconds for full cycle
-
-	// Accumulate time
-	g.frameTime += rl.GetFrameTime()
-
-	// Loop the animation
-	if g.frameTime >= cycleTime {
-		g.frameTime -= cycleTime
-	}
-
-	// Determine current frame based on time
-	timeInCycle := g.frameTime
-	if timeInCycle < timePerState {
-		g.frame = 0 // First pose
-	} else {
-		g.frame = 1 // Second pose
-	}
-}
-
-/*
-	func (g *Ghost) Update2(game *Game) {
-		g.updateFrame()
-		g.updateFright(game)
-		g.updateState(game)
-
-		if g.pixelsMoved >= Size {
-			// Update tile position based on the last move
-			// --- Tunnel Teleportation ---
-			// if tunnel something
-
-			g.tile = g.tile.Add(g.vel.X, g.vel.Y)
-			g.pixelsMoved = 0
-		}
-
-		var currentSpeed float32 = 0.0
-		if g.state == InHouse {
-			if g.pixelsMoved >= Size/2 {
-				g.bounce *= -1
-				g.dir = g.dir.Opposite()
-			} else if g.pixelsMoved <= -Size/2 {
-				g.bounce *= -1
-				g.dir = g.dir.Opposite()
-			}
-
-			currentSpeed = float32(g.bounce) * BounceSpeed
-			if g.behavior.ExitHouse(game) {
-				g.state = LeavingHouse
-			}
-		} else if g.state == LeavingHouse {
-			if g.tile.Y == 14 {
-				if g.tile.X == 14 {
-					g.dir = Up
-				} else if g.tile.X < 14 {
-					g.dir = Right
-				} else {
-					g.dir = Left
-				}
-			} else {
-				g.state = Scatter
-				g.dir = Up
-				g.tile = Vec2i{X: 14, Y: 12}
-				g.pixelsMoved = Size
-			}
-			currentSpeed = BounceSpeed
-			g.vel = g.dir.Vector()
-		} else {
-			if g.state == Scatter || g.state == Frightened { // TODO handle fright different
-				g.target = g.behavior.Scatter(game)
-			} else if g.state == Chase {
-				g.target = g.behavior.Chase(game)
-			}
-			g.dir = g.ChooseDirection(game.maze, g.target)
-			//if g.dir != None {
-			currentSpeed = g.Speed(game)
-			g.vel = g.dir.Vector()
-			//}
-		}
-
-		g.move(currentSpeed)
-	}
-*/
 func (g *Ghost) updateFright(game *Game) {
 	if g.state != Frightened {
 		return

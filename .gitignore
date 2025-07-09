@@ -25,6 +25,7 @@ profile.cov
 
 # Dependency directories (remove the comment below to include it)
 # vendor/
+.junie/
 
 # Go workspace file
 go.work

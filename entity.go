@@ -31,8 +31,6 @@ type Entity struct {
 	height      float32
 	frameCount  int
 	frame       int
-	frameTime   float32
-	pauseTime   float32
 }
 
 func (d Direction) String() string {
@@ -139,11 +137,6 @@ func (v Vec2i) Clamp() Vec2i {
 }
 
 func (e *Entity) move(speed float32) {
-	v := speed * 60.0
-	dt := rl.GetFrameTime()
-	d := v * dt
-	speed = d
-
 	if e.vel.X != 0 || e.vel.Y != 0 {
 		e.pixelsMoved += speed
 

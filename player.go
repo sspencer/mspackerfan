@@ -49,88 +49,8 @@ func NewPlayer() *Player {
 		speedTime: rl.GetTime() + 1.0,
 	}
 }
+
 func (p *Player) Update(game *Game) {
-	p.updateFrameTime() // animate mouth opening / closing
-
-	//if p.pauseFrames > 0 {
-	//	p.pauseFrames--
-	//	return
-	//}
-
-	//if p.InTunnel(game) {
-	//	fmt.Printf("tunnel teleport %s: %0.2f\n", p.tile, p.pixelsMoved)
-	//}
-
-	// --- Intersection and Direction Change Logic ---
-	if p.pixelsMoved >= Size {
-		// Update tile position based on the last move
-		p.tile = p.tile.Add(p.vel.X, p.vel.Y)
-		// --- Tunnel Teleportation ---
-		//if p.TileY == 17 {
-		//	if p.TileX <= -1 {
-		//		p.TileX = TileCols - 1
-		//	} else if p.TileX >= TileCols {
-		//		p.TileX = 0
-		//	}
-		//}
-
-		p.pixelsMoved = 0
-		p.isEatingDot = false // Reset eating flag when reaching new tile
-
-		// At the new intersection, decide the next move
-		if p.canMove(game.maze, p.nextVel) {
-			p.dir = p.nextDir
-			p.vel = p.nextVel
-		} else if game.InTunnel(&p.Entity) {
-			if p.tile.X < 0 {
-				p.tile.X = GameWidth - 1
-			} else if p.tile.X >= GameWidth-1 {
-				p.tile.X = 0
-			}
-		} else if !p.canMove(game.maze, p.vel) {
-			p.vel = Vec2i{}
-		}
-	}
-
-	// --- Handle starting from a standstill ---
-	if p.vel.IsZero() {
-		if p.canMove(game.maze, p.nextVel) {
-			p.dir = p.nextDir
-			p.vel = p.nextVel
-		}
-	}
-
-	// --- Calculate current speed based on context ---
-	p.move(p.calculateSpeed(game))
-	p.speedPixels += p.calculateSpeed(game)
-	if p.speedTime-game.levelTime < 0 {
-		p.speedTime = game.levelTime + 1.0
-		fmt.Printf("player moving %0.3f/s\n", p.speedPixels)
-		p.speedPixels = 0
-	}
-
-	// --- Eat Dots (only check once per tile entry) ---
-	if p.tile.InMaze() && !p.isEatingDot {
-		tile := game.maze[p.tile.Y][p.tile.X]
-		// Check for power pellet first
-		if tile == Power {
-			game.maze[p.tile.Y][p.tile.X] = Empty
-			p.pauseFrames = PowerPelletPause
-			p.isEatingDot = true
-			p.pauseFrames = DotEatPause
-
-			game.setGhostMode(Frightened)
-		} else if tile == Dot {
-			game.maze[p.tile.Y][p.tile.X] = Empty
-			game.dotsEaten++
-			p.pauseFrames = DotEatPause
-
-			p.isEatingDot = true
-		}
-	}
-}
-
-func (p *Player) Update2(game *Game) {
 	p.updateFrame() // animate mouth opening / closing
 
 	if p.pauseFrames > 0 {
@@ -185,8 +105,8 @@ func (p *Player) Update2(game *Game) {
 	p.move(p.calculateSpeed(game))
 	p.speedPixels += p.calculateSpeed(game)
 	if p.speedTime-game.levelTime < 0 {
-		p.speedTime = game.levelTime + 1.0
-		//fmt.Printf("player moving %0.3f/s\n", p.speedPixels)
+		p.speedTime = game.levelTime + 0.5
+		fmt.Printf("player moving %0.3f/s\n", p.speedPixels*2)
 		p.speedPixels = 0
 	}
 
@@ -198,41 +118,13 @@ func (p *Player) Update2(game *Game) {
 			game.maze[p.tile.Y][p.tile.X] = Empty
 			p.pauseFrames = PowerPelletPause
 			p.isEatingDot = true
-			p.pauseTime += 1 / 60.0
 			game.setGhostMode(Frightened)
 		} else if tile == Dot {
 			game.maze[p.tile.Y][p.tile.X] = Empty
 			game.dotsEaten++
 			p.pauseFrames = DotEatPause
-			p.pauseTime += 3 / 60.0
 			p.isEatingDot = true
 		}
-	}
-}
-
-func (p *Player) updateFrameTime() {
-	const timePerState = 5.0 / 60.0    // 0.08333 seconds per state (5 frames at 60 FPS)
-	const cycleTime = 4 * timePerState // 0.33333 seconds for full cycle
-
-	// Accumulate time
-	p.frameTime += rl.GetFrameTime()
-
-	// Loop the animation
-	if p.frameTime >= cycleTime {
-		p.frameTime -= cycleTime
-	}
-
-	// Determine current frame based on time
-	timeInCycle := p.frameTime
-	switch {
-	case timeInCycle < timePerState:
-		p.frame = 2 // Closed
-	case timeInCycle < 2*timePerState:
-		p.frame = 1 // Half-open
-	case timeInCycle < 3*timePerState:
-		p.frame = 0 // Fully open
-	default:
-		p.frame = 1 // Half-open (returning)
 	}
 }
 
