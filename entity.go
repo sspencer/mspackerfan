@@ -107,6 +107,10 @@ func (v Vec2i) Add(x, y int) Vec2i {
 	}
 }
 
+func (v Vec2i) Equals(x, y int) bool {
+	return v.X == x && v.Y == y
+}
+
 func (v Vec2i) Distance(b Vec2i) float32 {
 	dx := v.X - b.X
 	dy := v.Y - b.Y

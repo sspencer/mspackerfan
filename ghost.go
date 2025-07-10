@@ -165,14 +165,18 @@ func NewGhost(game *Game, b Behavior) *Ghost {
 }
 
 func (g *Ghost) ChooseDirection(game *Game, target Vec2i) Direction {
-
+	// TODO in Eaten state, set target to (x=14, y=11) (above ghost house door)
 	var validDirections []Direction
-	//if g.dir == None {
-	//	return None
-	//}
-	for _, dir := range []Direction{Up, Down, Left, Right} {
+
+	// to match original game, keep this order: Up > Left > Down > Right
+	for _, dir := range []Direction{Up, Left, Down, Right} {
+		// frightened state allows opposition direction
 		if dir == g.dir.Opposite() {
+			// TODO in frightened mode, ghosts should be able to go opposition direction
+			// but right now they jump (maybe offset problem) so comment out for now
+			//if g.state != Frightened || (g.state == Frightened && g.pixelsMovedInDir < Size*4) {
 			continue
+			//}
 		}
 		nextTile := dir.GetNextTile(g.tile)
 		if game.maze.IsValidMove(nextTile) {
@@ -226,13 +230,20 @@ func (g *Ghost) Update(game *Game) {
 		g.target = g.behavior.Scatter(game)
 	} else if g.state == Chase {
 		g.target = g.behavior.Chase(game) // ghost 0 is Blinky
+	} else if g.state == Eaten {
+		g.target = Vec2i{X: 14, Y: 11}
+
+		if g.tile.Equals(14, 11) {
+			g.state = InHouse
+			g.tile = Vec2i{X: 14, Y: 14}
+		}
 	}
 
 	curDir := g.dir
 	if game.InTunnel(&g.Entity) {
-		if g.tile.X < 0 {
+		if g.tile.X < 0 && g.dir == Left {
 			g.tile.X = GameWidth - 1
-		} else if g.tile.X >= GameWidth-1 {
+		} else if g.tile.X >= GameWidth-1 && g.dir == Right {
 			g.tile.X = 0
 		}
 	} else {
@@ -324,6 +335,12 @@ func (g *Ghost) calculateSpeed(game *Game) float32 {
 		speed *= TunnelSpeedFactor
 	}
 
+	// TODO In the original games, eaten ghosts (as eyes) move at a faster speed than normal
+	// (about 1.5x to 2x, depending on level)
+	if g.state == Eaten {
+		speed *= 1.5
+	}
+
 	return speed
 }
 
@@ -363,9 +380,9 @@ func (g *Ghost) updateState(game *Game) {
 		state = Scatter
 	}
 
-	if g.id == PinkyId && g.state != state {
-		fmt.Printf("from %s to %s at %0.4f\n", g.state, state, game.levelTime)
-	}
+	//if g.id == PinkyId && g.state != state {
+	//	fmt.Printf("from %s to %s at %0.4f\n", g.state, state, game.levelTime)
+	//}
 	g.state = state
 }
 
