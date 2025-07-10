@@ -1,6 +1,8 @@
 package main
 
 import (
+	"fmt"
+
 	rl "github.com/gen2brain/raylib-go/raylib"
 )
 
@@ -74,6 +76,18 @@ func (g *Game) Update() {
 	p.Update(g)
 	for _, ghost := range g.ghosts {
 		ghost.Update(g)
+
+		if p.tile.Distance(ghost.tile) < 1 {
+			if ghost.state == Frightened {
+				ghost.state = Eaten
+				//g.paused = true
+				fmt.Printf("Player eats %s\n", ghost.name)
+			} else if !p.eaten {
+				p.eaten = true
+				fmt.Printf("Ghost %s eats player\n", ghost.name)
+			}
+		}
+
 	}
 }
 

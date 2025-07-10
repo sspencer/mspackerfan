@@ -113,6 +113,8 @@ func (g *Game) drawGhosts() {
 		var loc Vec2i
 		if e.state == Frightened {
 			loc = e.fright[e.frightState]
+		} else if e.state == Eaten {
+			loc = e.eyes[e.dir]
 		} else {
 			loc = e.sprite[e.dir]
 		}

@@ -15,6 +15,8 @@ const (
 	Right
 	Down
 	Left
+
+	SpeedTime = 1.0
 )
 
 type Entity struct {
@@ -31,6 +33,9 @@ type Entity struct {
 	height      float32
 	frameCount  int
 	frame       int
+	eaten       bool
+	speedTime   float64
+	speedPixels float32
 }
 
 func (d Direction) String() string {

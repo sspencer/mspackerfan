@@ -28,10 +28,6 @@ type FrightState int
 const (
 	FrightBlue FrightState = iota
 	FrightWhite
-	FrightEyesUp
-	FrightEyesRight
-	FrightEyesDown
-	FrightEyesLeft
 )
 
 const (
@@ -59,6 +55,7 @@ type Ghost struct {
 	frightState      FrightState
 	behavior         Behavior
 	fright           map[FrightState]Vec2i
+	eyes             map[Direction]Vec2i
 	color            rl.Color
 	target           Vec2i // temporary for training
 	bounce           int
@@ -130,15 +127,16 @@ func NewGhost(game *Game, b Behavior) *Ghost {
 				Down:  {552, spriteY},
 				Left:  {488, spriteY},
 			},
-			tile:    Vec2i{X: startX, Y: startY},
-			pixel:   rl.Vector2{X: float32(startX * Pixel), Y: float32(startY * Pixel)},
-			width:   16,
-			height:  16,
-			dir:     dir,
-			nextDir: dir,
-			vel:     dir.Vector(),
-			nextVel: dir.Vector(),
-			frame:   0,
+			tile:      Vec2i{X: startX, Y: startY},
+			pixel:     rl.Vector2{X: float32(startX * Pixel), Y: float32(startY * Pixel)},
+			width:     16,
+			height:    16,
+			dir:       dir,
+			nextDir:   dir,
+			vel:       dir.Vector(),
+			nextVel:   dir.Vector(),
+			frame:     0,
+			speedTime: rl.GetTime() + SpeedTime,
 		},
 
 		id:       b.Id(),
@@ -146,12 +144,14 @@ func NewGhost(game *Game, b Behavior) *Ghost {
 		behavior: b,
 		bounce:   1,
 		fright: map[FrightState]Vec2i{
-			FrightBlue:      {584, 64}, // 2 frames
-			FrightWhite:     {616, 64}, // 2 frames
-			FrightEyesUp:    {616, 80}, // 1 frame
-			FrightEyesRight: {584, 80},
-			FrightEyesDown:  {632, 80},
-			FrightEyesLeft:  {600, 80},
+			FrightBlue:  {584, 64}, // 2 frames
+			FrightWhite: {616, 64}, // 2 frames
+		},
+		eyes: map[Direction]Vec2i{
+			Up:    {616, 80}, // 1 frame
+			Right: {584, 80},
+			Down:  {632, 80},
+			Left:  {600, 80},
 		},
 	}
 
@@ -247,7 +247,15 @@ func (g *Ghost) Update(game *Game) {
 
 	if g.vel.IsNonZero() {
 
-		currentSpeed := g.Speed(game)
+		currentSpeed := g.calculateSpeed(game)
+
+		g.speedPixels += currentSpeed
+		if g.speedTime-game.levelTime <= 0 && g.id == PinkyId {
+			g.speedTime = game.levelTime + SpeedTime
+			fmt.Printf("Pinky moving %0.3f/s\n", g.speedPixels)
+			g.speedPixels = 0
+		}
+
 		if curDir == g.dir {
 			g.pixelsMovedInDir += currentSpeed
 		} else {
@@ -262,7 +270,7 @@ func (g *Ghost) updateFrame() {
 	if g.state == InHouse {
 		g.frame = 0
 		return
-	} else if g.state == Frightened && g.frightState != FrightBlue && g.frightState != FrightWhite {
+	} else if g.state == Eaten {
 		g.frame = 0
 		return
 	}
@@ -305,7 +313,7 @@ func (g *Ghost) updateFright(game *Game) {
 	}
 }
 
-func (g *Ghost) Speed(game *Game) float32 {
+func (g *Ghost) calculateSpeed(game *Game) float32 {
 	speed := ghostSpeed(game.level)
 	if g.state == Frightened {
 		speed = frightSpeed(game.level)

@@ -17,8 +17,6 @@ type Player struct {
 	score       int
 	pauseFrames int
 	isEatingDot bool
-	speedTime   float64
-	speedPixels float32
 }
 
 func NewPlayer() *Player {
@@ -35,18 +33,18 @@ func NewPlayer() *Player {
 				Down:  {456, 48},
 				Left:  {456, 16},
 			},
-			pixel:   rl.Vector2{X: float32(startX * Pixel), Y: float32(startY * Pixel)},
-			width:   16,
-			height:  16,
-			tile:    Vec2i{X: startX, Y: startY},
-			dir:     shape,
-			nextDir: shape,
-			vel:     shape.Vector(),
-			nextVel: shape.Vector(),
+			pixel:     rl.Vector2{X: float32(startX * Pixel), Y: float32(startY * Pixel)},
+			width:     16,
+			height:    16,
+			tile:      Vec2i{X: startX, Y: startY},
+			dir:       shape,
+			nextDir:   shape,
+			vel:       shape.Vector(),
+			nextVel:   shape.Vector(),
+			speedTime: rl.GetTime() + SpeedTime,
 		},
 
-		score:     0,
-		speedTime: rl.GetTime() + 1.0,
+		score: 0,
 	}
 }
 
@@ -58,23 +56,10 @@ func (p *Player) Update(game *Game) {
 		return
 	}
 
-	//if p.InTunnel(game) {
-	//	fmt.Printf("tunnel teleport %s: %0.2f\n", p.tile, p.pixelsMoved)
-	//}
-
 	// --- Intersection and Direction Change Logic ---
 	if p.pixelsMoved >= Size {
 		// Update tile position based on the last move
 		p.tile = p.tile.Add(p.vel.X, p.vel.Y)
-		// --- Tunnel Teleportation ---
-		//if p.TileY == 17 {
-		//	if p.TileX <= -1 {
-		//		p.TileX = TileCols - 1
-		//	} else if p.TileX >= TileCols {
-		//		p.TileX = 0
-		//	}
-		//}
-
 		p.pixelsMoved = 0
 		p.isEatingDot = false // Reset eating flag when reaching new tile
 
@@ -102,11 +87,12 @@ func (p *Player) Update(game *Game) {
 	}
 
 	// --- Calculate current speed based on context ---
-	p.move(p.calculateSpeed(game))
-	p.speedPixels += p.calculateSpeed(game)
-	if p.speedTime-game.levelTime < 0 {
-		p.speedTime = game.levelTime + 0.5
-		fmt.Printf("player moving %0.3f/s\n", p.speedPixels*2)
+	speed := p.calculateSpeed(game)
+	p.move(speed)
+	p.speedPixels += speed
+	if p.speedTime-game.levelTime <= 0 {
+		p.speedTime = game.levelTime + SpeedTime
+		fmt.Printf("player moving %0.3f/s\n", p.speedPixels)
 		p.speedPixels = 0
 	}
 
@@ -155,9 +141,6 @@ func (p *Player) updateFrame() {
 
 func (p *Player) calculateSpeed(game *Game) float32 {
 	speed := playerSpeed(game.level)
-	if p.isEatingDot {
-		speed -= float32(p.pauseFrames) / 60
-	}
 	// Apply tunnel speed reduction
 	if game.InTunnel(&p.Entity) {
 		speed *= TunnelSpeedFactor
