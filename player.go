@@ -140,7 +140,14 @@ func (p *Player) updateFrame() {
 }
 
 func (p *Player) calculateSpeed(game *Game) float32 {
-	speed := playerSpeed(game.level)
+	var speed float32
+
+	if game.frightTime-rl.GetTime() > 0 {
+		speed = playerFrightSpeed(game.level)
+	} else {
+		speed = playerSpeed(game.level)
+	}
+
 	// Apply tunnel speed reduction
 	if game.InTunnel(&p.Entity) {
 		speed *= TunnelSpeedFactor
@@ -156,11 +163,6 @@ func (p *Player) canMove(maze Maze, dir Vec2i) bool {
 
 	nextTile := p.tile.Add(dir.X, dir.Y)
 
-	// Special case: Allow movement into the tunnel off-screen
-	//if nextTileY == 17 && (nextTileX < 0 || nextTileX >= TileCols) {
-	//	return true
-	//}
-
 	// Check for moving off the map boundaries (non-tunnel)
 	if nextTile.X < 0 || nextTile.X >= GameWidth || nextTile.Y < 0 || nextTile.Y >= GameHeight {
 		return false
@@ -170,7 +172,7 @@ func (p *Player) canMove(maze Maze, dir Vec2i) bool {
 	return maze[nextTile.Y][nextTile.X] != Wall
 }
 
-// PackerSpeed returns players's speed in pixels per frame based on level
+// playerSpeed returns players's speed in pixels per frame based on level
 // Level 1 returns 88.0 pixels/second (base speed)
 func playerSpeed(level int) float32 {
 
@@ -196,11 +198,14 @@ func playerSpeed(level int) float32 {
 		speed = speedTable[len(speedTable)-1]
 	}
 
-	return speed / 60.0 // Convert to pixels per frame
+	// TODO maybe remove cheat boost here, but player should be able to outrun
+	// ghosts by a little -- garbage collection problem (but wouldn't that effect
+	// all sprites)
+	return (1.023 * speed) / 60.0 // Convert to pixels per frame
 }
 
-// PlayerFrightSpeed returns player's speed when power pellet is active
-func PlayerFrightSpeed(level int) float32 {
+// playerFrightSpeed returns player's speed when power pellet is active
+func playerFrightSpeed(level int) float32 {
 	// During fright state (after eating power pellet)
 	var frightSpeedTable = []float32{
 		105.6, // Level 1-4: 120% of base speed
